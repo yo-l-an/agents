@@ -14,3 +14,4 @@ C'est un travail long et important, à réaliser progressivement. Formule d'abor
 - Supprime les fonctions à usage unique qui ne font qu'appeler une autre fonction. Raccorde directement à la fonction appelée.
 - Privilégie les flows implicites quand il s'agit de l'usage d'utilitaires ou de fonctions d'instance connues, au lieu de faire régulièrement des checks explicites et redondants.
 - Retire les early returns silencieux et redondants. Nous préférons que le code plante en montrant une erreur claire plutôt que de camoufler une erreur potentielle derrière un return silencieux.
+- Préférer des one-liners pour les ifs simples, les ternaires, les arrow functions, les template literals et les returns. Cela rend le code plus lisible et plus concis.
