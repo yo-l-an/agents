@@ -1,17 +1,14 @@
 ---
 name: clean-code
-description: Skill de nettoyage de code, incluant la suppression de code fallback inutile, l'allègement des vérifications redondantes et la simplification des fonctions à usage unique.
+description: Clean up code by removing unnecessary code, redundant checks, and improving readability. Focus on observable behavior and maintain necessary security guards.
 ---
 
-# Skill de nettoyage de code
-
-C'est un travail long et important, à réaliser progressivement. Formule d'abord une liste des points à améliorer en suivant la liste des tâches. Il faut pouvoir réaliser un nettoyage de manière approfondie et efficace petit à petit sur chaque cas, en se concentrant bien sur les points suivants :
-
-- Retire le code fallback inutile et legacy inutile.
-- Allège la redondance des checks/guards dont on connait déjà les types et valeurs : String(), Number(), `${...}`, typeof, instanceof, Array.isArray, etc.
-- Utilise String() ou .toString() pour faire du string casting, et privilégie les template literals pour faire du string interpolation.
-- Conserve les guards de sécurité nécessaires.
-- Supprime les fonctions à usage unique qui ne font qu'appeler une autre fonction. Raccorde directement à la fonction appelée.
-- Privilégie les flows implicites quand il s'agit de l'usage d'utilitaires ou de fonctions d'instance connues, au lieu de faire régulièrement des checks explicites et redondants.
-- Retire les early returns silencieux et redondants. Nous préférons que le code plante en montrant une erreur claire plutôt que de camoufler une erreur potentielle derrière un return silencieux.
-- Préférer des one-liners pour les ifs simples, les ternaires, les arrow functions, les template literals et les returns. Cela rend le code plus lisible et plus concis.
+- Remove unnecessary fallback and legacy code.
+- Remove redundant checks/guards for known types and values: String(), Number(), `${...}`, typeof, instanceof, Array.isArray, etc.
+- Use String() or .toString() for string casting, and prefer template literals for string interpolation.
+- Keep necessary security guards.
+- Remove single-use functions that only call another function. Connect directly to the called function.
+- Prefer implicit flows when using known utilities or instance functions, instead of regularly doing explicit and redundant checks.
+- Remove silent and redundant early returns. We prefer the code to fail with a clear error rather than hiding a potential error behind a silent return and fake success.
+- Prefer one-liners for simple ifs, ternaries, arrow functions, template literals, and returns. This makes the code more readable and concise.
+- Remove self explanatory labels unless they are about unpredictable and unknown effects
