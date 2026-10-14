@@ -29,7 +29,7 @@ This skill owns motion taste: phase timing, curves, durations, scales, travel an
 4. **Weigh** it. Take durations from its frequency tier, and from mass where the tier defers to mass.
 5. **Anchor** it. Set where it comes from and where it goes (see Origin).
 6. **Stage** it. The main subject appears first and lasts longest. Secondary elements get simpler motion.
-7. **Spam-test** it. Trigger it repeatedly, reverse it mid-flight, and look for eaten states, missing elements, and motion that restarts from zero.
+7. **Spam-test** it against Interruption. Trigger it repeatedly, reverse it mid-flight, and look for eaten states, missing elements, visible jumps, and entrances that lost their motion.
 
 The work is done when every animated element has a class, a frequency tier, an origin, a separately timed move and fade, and passes the spam test.
 
@@ -176,9 +176,13 @@ A morph animates between two layouts of the same place, like smart animate: elem
 
 ## Interruption
 
-- An interrupted animation continues from its current on-screen value toward the new target. Retarget it; restarting from its first frame makes the element jump.
-- Reversing mid-flight (closing a dropdown while it opens) runs the exit from where the element is, at the exit's timing.
-- Anything the user can trigger twice in a second retargets this way.
+An interruption keeps the animation's **intent**: an entrance always reads as that entrance, and the eye never sees a cut. Whether the element is still visible decides how. Spam-testing (Workflow) checks both cases.
+
+- **Visible**: continue from the current on-screen value toward the new target. Retarget it; restarting from its first frame makes the element jump.
+    - Reversing mid-flight (closing a dropdown while it opens) runs the exit from where the element is, at the exit's timing.
+- **Hidden** (faded out, clipped out, or off-screen): snap it instantly to the enter's start value and replay the full enter. The snap happens while hidden, so it never shows as a cut.
+    - A slider image that zooms out as it enters always starts from its full zoom, even if its last zoom-out had not finished.
+    - Staggered items sliding in from the side of a reopened menu always slide the full distance.
 
 ## Reduced motion
 
