@@ -31,7 +31,7 @@ The work is done when every animated element has a class, a separately timed mov
 
 ## Fade timing
 
-The curve is always the native CSS `ease`. The move keeps its own curve.
+The curve is always the native CSS `ease`. The move uses the curves in Move timing.
 
 - **0.2s**: Small changes: button hover text and background, label state changes
 - **0.3s**: Crossfades between small elements (icon swaps); closing small and medium surfaces
@@ -40,6 +40,20 @@ The curve is always the native CSS `ease`. The move keeps its own curve.
 - **0.7-1s**: High-contrast backdrops
 
 Low-contrast color changes take the shorter end of the range, because slow low-contrast fades produce color banding.
+
+## Move timing
+
+- **`ease`**: native CSS `ease`. Fades only (see Fade timing).
+- **ease-out**: `cubic-bezier(0.2, 0.4, 0.1, 0.98)`. Enters: the element arrives fast and settles into place.
+- **ease-in-out**: `cubic-bezier(0.4, 0.05, 0.2, 1)`. Moves between two on-screen states (morphs, resizes, repositioning) and exits, which start slowly and accelerate away.
+
+The move is always longer than its fade, and its duration grows with mass.
+
+### Readable content
+
+Content the user must read right away settles fast: short travel, short duration, so it is at rest when the eye starts reading. Text in motion is hard to read. A long, slow slide keeps it moving after the reader has started. This applies to labels, messages, toasts, notifications, and any text that appears in response to an action.
+
+Readability outranks mass: a large surface that carries text to read now still settles fast. Its weight can come through the fade and the background layer instead of a long move.
 
 ## Enter
 
