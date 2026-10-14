@@ -15,7 +15,7 @@ Two axes set timing:
 - **Mass** is how heavy a surface reads: its size and its contrast. Heavier surfaces move slower so the eye can follow them.
 - **Frequency** is how often the user triggers the animation. The more often it plays, the faster and lighter it gets, while it still shows where the new state comes from.
 
-When mass and frequency disagree, frequency wins. Swaps and morphs ignore both: their timing is fixed.
+When mass and frequency disagree, frequency wins. Swaps and morphs ignore frequency: mass picks their fast or slow speed (see Swap and Morph layout).
 
 ## Precedence
 
@@ -76,7 +76,7 @@ The curve is always the native CSS `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`). 
 - **0.3s**: Closing small and medium surfaces
 - **0.4s**: Opening panels and modals; color change on medium and large surfaces; closing large surfaces
 - **0.5s**: Opening and closing very large surfaces (low-contrast backdrops); slow-motion elements
-- **0.7-1s**: High-contrast backdrops
+- **0.7-1s**: High-contrast backdrops; full page layout entrance
 
 Low-contrast color changes take the shorter end of the range, because slow low-contrast fades produce color banding.
 
@@ -102,6 +102,7 @@ Readability outranks mass: a large surface that carries text to read now still s
 - Modals and other unanchored surfaces stay centered.
 - Elements that enter from an edge (drawers, sheets, toasts) travel from that edge.
 - Exits retrace the entry path in reverse. An element that came from the trigger shrinks back toward it.
+- **Cause**: content brought in by an action carries that action's momentum (see Anticipation, Weight and inertia). The new content travels toward the trigger, pulled in by it: a trigger to the left of the content brings the new content in from the right. When the trigger has a counterpart in the new layout (a button that becomes a close button), morph it into that counterpart (see Morph layout).
 - Entering scales start between 0.9 and 0.98, depending on mass and frequency. Swaps keep their own scales (see Swap).
 
 ## Enter
@@ -141,20 +142,29 @@ Use for slides, images and surfaces that fill the screen or container.
 
 Use for icons, labels, design system atoms and molecules, field groups that change with a mode, and page transitions. A swap signals a state change and guides the eye to the new state.
 
-- Run it in sequence: fade out the old element, then animate in the new one. One thing changes at a time. A crossfade here changes everything at once and misleads the eye.
-- **Old element**: fades out with no delay, always 0.35s `ease`.
-- **New element**: fades in after a 0.25s delay, always 0.7s `ease`.
-- The overlap is deliberate: the new element starts once the old one is mostly hidden (around 10% opacity), not fully gone. Starting later leaves an empty beat that stalls the exchange; starting sooner overlaps them into a crossfade.
-- Optionally pair it with a light scale-down so both elements exchange in one motion: 0.65 for small elements, 0.85 for medium, 0.92 for large.
+A swap only times the exchange: when the old content leaves and when the new content arrives. How the new content enters (move, stagger) follows Enter, and its direction follows Origin.
+
+- Run it in sequence: one thing changes at a time. A crossfade here changes everything at once and misleads the eye.
+- Two speeds, picked by the mass of the swapped content:
+    - **Fast** (small and medium): old content fades out over 0.15s with no delay; new content starts entering after 0.075s.
+    - **Slow** (large and above): old content fades out over 0.35s with no delay; new content starts entering after 0.25s.
+- The new content's fade takes its duration from Fade timing, by its mass.
+- The overlap is deliberate: the new content starts once the old one is mostly hidden, not fully gone. Starting later leaves an empty beat that stalls the exchange; starting sooner overlaps them into a crossfade.
+- Optionally pair it with a light scale-down so both exchange in one motion: 0.65 for small elements, 0.85 for medium, 0.92 for large.
 
 ## Morph layout
 
-Keep the container and swap the content inside it, animating the container's size to fit. This reads better than replacing a container with an identical-looking one.
+A morph animates between two layouts of the same place, like smart animate: elements present in both layouts travel to their new place, the container resizes to fit, and the rest swaps. This reads better than replacing a container with an identical-looking one. For each morph:
 
-- **The container is the move.** The content stays in place, anchored to the container's start edge, with no transform. The resizing edge clips it, revealing or hiding it as it travels.
-- **Container**: resizes from its current on-screen size, starting immediately, always 0.7s `cubic-bezier(0.35, 0.05, 0, 0.95)`.
-- **Content**: runs as a Swap, with its timing. The container settles first and the new content finishes clearing inside it.
-- **Empty state**: collapsing to nothing keeps the same timing, with only the fade-out.
+1. **Match** the elements present in both layouts by role, even when their look changes: a title, an image, the trigger that becomes the new layout's close button. Each one moves and resizes from its old box to its new one. When its look changes, crossfade its visuals inside it during the move.
+2. **Homogenize** near-equal sizes: when the two layouts differ by only a few pixels, either give them the same size (shared minimum height, aligned spacing) or set min-height or min-width to the container (stretch to fill, align baseline). A resize of a few pixels reflows and shifts the surrounding page for no visible gain.
+3. **Resize** the container from its current on-screen size, starting immediately.
+4. **Swap** the unmatched content (see Swap). The new content can enter with a move and a stagger.
+5. **Clip** the content at the container's edge only when the container has a visible boundary (background, border, outline, shadow). Without one, a clip cuts the content off in mid-air: let the content fade unclipped, while the resize only moves the surrounding layout.
+
+- **Container and matched elements** move together on `cubic-bezier(0.35, 0.05, 0, 0.95)`, at a speed picked by the container's mass: 0.4s for small and medium containers, 0.7s for large ones and above.
+- **Content** follows the Swap speed of its own mass.
+- **Empty state**: collapsing to nothing keeps the morph's timing, with only the fade-out.
 - **Nested morphs** resize their parent along with them, with the same timing.
 
 ## Feedback
