@@ -15,7 +15,7 @@ Two axes set timing:
 - **Mass** is how heavy a surface reads: its size and its contrast. Heavier surfaces move slower so the eye can follow them.
 - **Frequency** is how often the user triggers the animation. The more often it plays, the faster and lighter it gets, while it still shows where the new state comes from.
 
-When mass and frequency disagree, frequency wins.
+When mass and frequency disagree, frequency wins. Swaps and morphs ignore both: their timing is fixed.
 
 ## Precedence
 
@@ -31,7 +31,7 @@ This skill owns motion taste: phase timing, curves, durations, scales, travel an
 6. **Stage** it. The main subject appears first and lasts longest. Secondary elements get simpler motion.
 7. **Spam-test** it. Trigger it repeatedly, reverse it mid-flight, and look for eaten states, missing elements, and motion that restarts from zero.
 
-The work is done when every animated element has a class, scoped tokens if needed, a frequency tier, an origin, a separately timed move and fade, and passes the spam test.
+The work is done when every animated element has a class, a frequency tier, an origin, a separately timed move and fade, and passes the spam test.
 
 ## Principles
 
@@ -64,16 +64,16 @@ The work is done when every animated element has a class, scoped tokens if neede
 - **Small**: icons, buttons, checkboxes, radios, toggles, chips and tags, badges, tooltips, single labels.
 - **Medium**: cards, dropdown menus, popovers, toasts, inputs and field groups, list rows, small dialogs.
 - **Large**: modals, side panels and drawers, bottom sheets, full-width navigation menus, page sections, images and slides that fill the screen.
-- **Very large**: backdrops and overlays covering the whole page. Their duration depends on contrast: 0.5s when low, 0.7–1s when high (see Fade timing).
+- **Very large**: backdrops and overlays covering the whole page. Their contrast sets the fade duration (see Fade timing).
 
-Contrast decides between two steps: an element with high contrast against its background reads one step heavier.
+Contrast shifts the class: an element with high contrast against its background reads one class heavier.
 
 ## Fade timing
 
-The curve is always the native CSS `ease`. The move uses the curves in Move timing.
+The curve is always the native CSS `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`). The move uses the curves in Move timing.
 
 - **0.2s**: Small changes: button hover text and background, label state changes
-- **0.3s**: Crossfades between small elements (icon swaps); closing small and medium surfaces
+- **0.3s**: Closing small and medium surfaces
 - **0.4s**: Opening panels and modals; color change on medium and large surfaces; closing large surfaces
 - **0.5s**: Opening and closing very large surfaces (low-contrast backdrops); slow-motion elements
 - **0.7-1s**: High-contrast backdrops
@@ -82,9 +82,9 @@ Low-contrast color changes take the shorter end of the range, because slow low-c
 
 ## Move timing
 
-- **`ease`**: native CSS `ease`. Use for very fast moves (press, repositionning).
+- **`ease`**: native CSS `ease`. Very fast moves, such as a press.
 - **ease-out**: `cubic-bezier(0.2, 0.4, 0.1, 0.98)`. Enters: the element arrives fast and settles into place.
-- **ease-in-out**: `cubic-bezier(0.4, 0.05, 0.2, 1)`. Moves between two on-screen states (morphs, resizes, repositioning) and exits, which start slowly and accelerate away.
+- **ease-in-out**: `cubic-bezier(0.4, 0.05, 0.2, 1)`. Moves between two on-screen states (resizes, repositioning) and exits, which start slowly and accelerate away.
 
 The move is always longer than its fade, and its duration grows with mass.
 
@@ -142,12 +142,12 @@ Use for slides, images and surfaces that fill the screen or container.
 Use for icons, labels, design system atoms and molecules, field groups that change with a mode, and page transitions. A swap signals a state change and guides the eye to the new state.
 
 - Run it in sequence: fade out the old element, then animate in the new one. One thing changes at a time. A crossfade here changes everything at once and misleads the eye.
-- **Old element**: fades out with no delay, always 0.35s `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`).
+- **Old element**: fades out with no delay, always 0.35s `ease`.
 - **New element**: fades in after a 0.25s delay, always 0.7s `ease`.
 - The overlap is deliberate: the new element starts once the old one is mostly hidden (around 10% opacity), not fully gone. Starting later leaves an empty beat that stalls the exchange; starting sooner overlaps them into a crossfade.
 - Optionally pair it with a light scale-down so both elements exchange in one motion: 0.65 for small elements, 0.85 for medium, 0.92 for large.
 
-## Morph
+## Morph layout
 
 Keep the container and swap the content inside it, animating the container's size to fit. This reads better than replacing a container with an identical-looking one.
 
@@ -178,7 +178,7 @@ Under `prefers-reduced-motion: reduce`, keep the fades and color changes that ex
 
 - Animate with the Web Animations API (`element.animate`).
 - Animate `opacity` and `transform` by default. `clip-path` is allowed for reveals. Container size is allowed for morphs only.
-- Name each animated property explicitly. Never use `transition: all`.
+- Name each animated property explicitly (avoid `transition: all`), so only the intended properties animate.
 - Put the background (ground, tint, blur) on its own layer, separate from the content:
     - The background resizes and fades on its own.
     - The content keeps its own clip and its own fade.
