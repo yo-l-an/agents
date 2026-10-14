@@ -112,7 +112,7 @@ Readability outranks mass: a large surface that carries text to read now still s
 
 ### Stagger
 
-Stagger siblings or nested items only in predictable grid or list layouts with several rows or columns, and only at occasional and rare frequency. In unpredictable layouts, staggering adds noise that misleads the eye.
+Stagger siblings or nested items only in predictable grid or list layouts with several rows or columns. In unpredictable layouts, staggering adds noise that misleads the eye.
 
 - Each item gets its own delay: `delay + n × step`.
 - For a fixed item count, space the delays along the CSS `ease` curve instead of evenly. This gives the sequence weight.
@@ -124,7 +124,6 @@ Stagger siblings or nested items only in predictable grid or list layouts with s
 Exits are quicker and subtler than enters, but they are always animated. A fade-out is at most as long as the fade-in of the same element.
 
 - **Default** (the element leaves and nothing takes its place):
-    - The move starts at full opacity.
     - The fade starts as the move accelerates, with a delay of 0-0.1s.
     - The fade ends just before the move does. The slow tail of an exit leaves ghost frames that catch the eye, and the fade hides them.
 - **Returning focus** (a panel, menu or overlay closing over the page): the fade starts with no delay, so the eye goes straight back to the main content.
