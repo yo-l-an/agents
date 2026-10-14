@@ -174,6 +174,22 @@ A morph animates between two layouts of the same place, like smart animate: elem
 - **Dismiss on select**: when a dialog closes right after a click, blink the chosen option over 0.3s total: selected → unselected → selected.
 - **Hover**: put hover styles inside `@media (hover: hover)` so touch devices skip them.
 
+### Hit layer
+
+A hover or press that transforms (translate, scale) animates a **visual layer**, while a separate **hit layer** that never moves receives the pointer. This prevents hover jitter: the element sliding out from under the cursor and looping between states.
+
+- The hit layer is the static container around the visual layer, or an invisible element positioned over it (`position: absolute`, `inset`, a higher `z-index`).
+- Make the hit layer at least 44×44px on touch devices, even when the visual is smaller.
+- Make the hit layer the first sibling of the visual layer, so CSS selectors drive every effect from its states: `.hit:hover ~ .visual`, `.hit:active ~ .visual`, `.hit:focus-visible ~ .visual`.
+- The hit layer is the interactive element (`<a>`, `<button>`): it carries the accessible name (`aria-label` when it has no text). Draw the focus ring on the visual layer, through `.hit:focus-visible ~ .visual`.
+
+```html
+<div class="control">
+    <button class="hit" aria-label="Close"></button>
+    <span class="visual">…</span>
+</div>
+```
+
 ## Interruption
 
 An interruption keeps the animation's **intent**: an entrance always reads as that entrance, and the eye never sees a cut. Whether the element is still visible decides how. Spam-testing (Workflow) checks both cases.
