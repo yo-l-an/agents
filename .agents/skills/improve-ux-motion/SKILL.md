@@ -171,7 +171,7 @@ A morph animates between two layouts of the same place, like smart animate: elem
 
 - **Press**: `75ms ease`, so the action feels immediate.
 - **Release**: 0.35-0.5s back to rest. The slower release conveys weight and the result of the action.
-- **Dismiss on select**: when a dialog closes right after a click, blink the chosen option over 0.3s total: unselected → selected → unselected → selected.
+- **Dismiss on select**: when a dialog closes right after a click, blink the chosen option over 0.3s total: selected → unselected → selected.
 - **Hover**: put hover styles inside `@media (hover: hover)` so touch devices skip them.
 
 ## Interruption
