@@ -142,11 +142,20 @@ Use for slides, images and surfaces that fill the screen or container.
 Use for icons, labels, design system atoms and molecules, field groups that change with a mode, and page transitions. A swap signals a state change and guides the eye to the new state.
 
 - Run it in sequence: fade out the old element, then animate in the new one. One thing changes at a time. A crossfade here changes everything at once and misleads the eye.
+- **Old element**: fades out with no delay, always 0.35s `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`).
+- **New element**: fades in after a 0.25s delay, always 0.7s `ease`.
+- The overlap is deliberate: the new element starts once the old one is mostly hidden (around 10% opacity), not fully gone. Starting later leaves an empty beat that stalls the exchange; starting sooner overlaps them into a crossfade.
 - Optionally pair it with a light scale-down so both elements exchange in one motion: 0.65 for small elements, 0.85 for medium, 0.92 for large.
 
 ## Morph
 
 Keep the container and swap the content inside it, animating the container's size to fit. This reads better than replacing a container with an identical-looking one.
+
+- **The container is the move.** The content stays in place, anchored to the container's start edge, with no transform. The resizing edge clips it, revealing or hiding it as it travels.
+- **Container**: resizes from its current on-screen size, starting immediately, always 0.7s `cubic-bezier(0.35, 0.05, 0, 0.95)`.
+- **Content**: runs as a Swap, with its timing. The container settles first and the new content finishes clearing inside it.
+- **Empty state**: collapsing to nothing keeps the same timing, with only the fade-out.
+- **Nested morphs** resize their parent along with them, with the same timing.
 
 ## Feedback
 
