@@ -12,6 +12,15 @@ The **climax** of a move is the moment it starts slowing down after its fastest 
 
 **Mass** is how heavy a surface reads: its size and its contrast against what is behind it. Mass sets duration. Heavier surfaces move slower so the eye can follow them.
 
+## Mass
+
+- **Small**: icons, buttons, toggles, tags, badges, tooltips, single labels.
+- **Medium**: cards, dropdown menus, popovers, toasts, inputs and field groups, list rows, small dialogs.
+- **Large**: modals, side panels and drawers, bottom sheets, full-width navigation menus, page sections, images and slides that fill the screen.
+- **Very large**: backdrops and overlays covering the whole page. Their duration depends on contrast: 0.5s when low, 0.7–1s when high (see Fade timing).
+
+Contrast decides between two steps: an element with high contrast against its background reads one step heavier.
+
 ## Workflow
 
 1. **Classify** each animated element as one of: enter, exit, crossfade, swap, morph or feedback.
@@ -103,7 +112,7 @@ Keep the container and swap the content inside it, animating the container's siz
 
 - **Press**: `75ms ease`, so the action feels immediate.
 - **Release**: 0.35-0.5s back to rest. The slower release conveys weight and the result of the action.
-- **Dismiss on select**: when a dialog closes right after a click, blink the chosen option over 0.4s total: unselected → selected → unselected → selected.
+- **Dismiss on select**: when a dialog closes right after a click, blink the chosen option over 0.3s total: unselected → selected → unselected → selected.
 - **Hover**: put hover styles inside `@media (hover: hover)` so touch devices skip them.
 
 ## Implementation
