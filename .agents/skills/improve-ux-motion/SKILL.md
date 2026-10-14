@@ -43,7 +43,7 @@ Low-contrast color changes take the shorter end of the range, because slow low-c
 
 ## Move timing
 
-- **`ease`**: native CSS `ease`. Fades only (see Fade timing).
+- **`ease`**: native CSS `ease`. Use for very fast moves (press, drag)
 - **ease-out**: `cubic-bezier(0.2, 0.4, 0.1, 0.98)`. Enters: the element arrives fast and settles into place.
 - **ease-in-out**: `cubic-bezier(0.4, 0.05, 0.2, 1)`. Moves between two on-screen states (morphs, resizes, repositioning) and exits, which start slowly and accelerate away.
 
