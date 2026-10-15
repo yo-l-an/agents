@@ -172,7 +172,7 @@ A morph animates between two layouts of the same place, like smart animate: elem
 - **Press**: `75ms ease`, so the action feels immediate.
 - **Release**: 0.35-0.5s back to rest. The slower release conveys weight and the result of the action.
 - **Dismiss on select**: when a dialog closes right after a click, select and blink the chosen option over 0.3s total: selected → unselected → selected. Run the action immediately then close the dialog.
-- **User select**: Prevent user-select on interactive elements: buttons, links (outside paragraphs), menus.
+- **User select**: Prevent user-select on interactive elements: buttons, links (outside paragraphs), menus. Images should never be selected anywhere (only the alt text).
 - **Native buttons feel**: If no mouseleave was triggered after the pointerdown, run the action on pointerup. This only applies to action buttons (JS), they should behave as immovable objects and maintain the active state during this behaviour. Links should remain draggable and cancellable on drag.
 - **Pointerdown buttons**: The action should run on pointerdown for small non-destructive actions that slow down the user : list and graph filters, segmented controls, adding a tab, opening a menu. The click might still be pressed, avoid double fire.
 - **Hover**: put hover styles inside `@media (hover: hover)` so touch devices skip them.
