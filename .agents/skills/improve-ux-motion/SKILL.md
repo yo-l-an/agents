@@ -1,6 +1,6 @@
 ---
 name: improve-ux-motion
-description: Motion taste for UI animation with opacity and transform; overrides curves, durations and timing from other animation skills. Use when writing, reviewing or tuning UI animations: enter and exit transitions, dropdowns, panels, menus and modals, crossfades, icon or state swaps, staggered lists, layout morphs, press and hover feedback.
+description: Motion taste for UI animation with opacity and transform; overrides curves, durations and timing from other animation skills. Use when writing, reviewing or tuning UI animations for enter and exit transitions, dropdowns, panels, menus and modals, crossfades, icon or state swaps, staggered lists, layout morphs, press and hover feedback.
 ---
 
 Every UI animation has two **phases**, each with its own start, duration and curve:
