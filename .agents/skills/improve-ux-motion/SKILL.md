@@ -38,7 +38,7 @@ The work is done when every animated element has a class, a frequency tier, an o
 - **Anticipation**: a major action starts with a smaller preparatory movement. Momentum builds from a source: a user interaction, or the end of another animation.
 - **Weight and inertia**: mass gives a surface inertia. Use that inertia to set other elements in motion.
 - **Staging**: motion pulls attention to the most important part of the layout.
-- **Arcs**: living and moving objects follow curved paths.
+- **Arcs**: living and moving objects follow curved paths on medium to long distances. Keep short distances linear. Try to avoid making objets go out of bounds.
 - **Continuity**: every new state visibly comes from its cause, so the user never wonders where it came from.
 
 ## Frequency
@@ -157,7 +157,7 @@ A swap only times the exchange: when the old content leaves and when the new con
 A morph animates between two layouts of the same place, like smart animate: elements present in both layouts travel to their new place, the container resizes to fit, and the rest swaps. This reads better than replacing a container with an identical-looking one. For each morph:
 
 1. **Match** the elements present in both layouts by role, even when their look changes: a title, an image, the trigger that becomes the new layout's close button. Each one moves and resizes from its old box to its new one. When its look changes, crossfade its visuals inside it during the move.
-2. **Homogenize** near-equal sizes: when the two layouts differ by only a few pixels, either give them the same size (shared minimum height, aligned spacing) or set min-height or min-width to the container (stretch to fill, align baseline). A resize of a few pixels reflows and shifts the surrounding page for no visible gain.
+2. **Homogenize** near-equal sizes: when the two layouts differ by only a few pixels, either give them the same size (shared minimum height, aligned spacing) or set min-height or min-width to the container (stretch to fill, align baseline). A resize of a few pixels reflows and shifts the surrounding page for no visible gain. Use invisible "stable-size" elements in the layout to stabilize two contents of slightly different sizes (text weight, labels).
 3. **Resize** the container from its current on-screen size, starting immediately.
 4. **Swap** the unmatched content (see Swap). The new content can enter with a move and a stagger.
 5. **Clip** the content at the container's edge only when the container has a visible boundary (background, border, outline, shadow). Without one, a clip cuts the content off in mid-air: let the content fade unclipped, while the resize only moves the surrounding layout.
@@ -171,10 +171,10 @@ A morph animates between two layouts of the same place, like smart animate: elem
 
 - **Press**: `75ms ease`, so the action feels immediate.
 - **Release**: 0.35-0.5s back to rest. The slower release conveys weight and the result of the action.
-- **Dismiss on select**: when a dialog closes right after a click, select and blink the chosen option over 0.3s total: selected → unselected → selected. Run the action immediately then close the dialog.
-- **User select**: Prevent user-select on interactive elements: buttons, links (outside paragraphs), menus. Images should never be selected anywhere (only the alt text).
-- **Native buttons feel**: If no mouseleave was triggered after the pointerdown, run the action on pointerup. This only applies to action buttons (JS), they should behave as immovable objects and maintain the active state during this behaviour. Links should remain draggable and cancellable on drag.
-- **Pointerdown buttons**: The action should run on pointerdown for small non-destructive actions that slow down the user : list and graph filters, segmented controls, adding a tab, opening a menu. The click might still be pressed, avoid double fire.
+- **Dismiss on select**: when a dialog closes right after a click, select and blink the chosen option over 0.3s total: selected → unselected → selected. Run the action immediately on on select, never wait for the blink animation.
+- **User select**: Prevent user-select in interactive elements: buttons, links (outside paragraphs), menus, pagers. Images should never be selected anywhere (only the alt text).
+- **Native buttons feel**: Listen for `pointerdown`, `mouseleave` and `pointerup`. After a `pointerdown`, if no `mouseleave` was triggered until the `pointerup`, run the action. `mouseleave` is a way to cancel the action. This only applies to action buttons (JS): they should behave as immovable objects and maintain the active state during this behaviour, `mouseleave` remove the active state. Links remain draggable and cancellable on drag.
+- **Pointerdown buttons**: The action should run on `pointerdown` for small non-destructive actions that slow down the user : list and graph filters, segmented controls, adding a tab, opening a menu. The click might still be pressed, avoid double fire.
 - **Hover**: put hover styles inside `@media (hover: hover)` so touch devices skip them.
 
 ### Hit layer
@@ -188,7 +188,10 @@ A hover or press that transforms (translate, scale) animates a **visual layer**,
 
 ```html
 <div class="control">
-    <button class="hit" aria-label="Close"></button>
+    <button
+        class="hit"
+        aria-label="Close"
+    ></button>
     <span class="visual">…</span>
 </div>
 ```
