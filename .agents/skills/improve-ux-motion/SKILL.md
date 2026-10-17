@@ -73,9 +73,8 @@ Contrast shifts the class: an element with high contrast against its background 
 The curve is always the native CSS `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`). The move uses the curves in Move timing.
 
 - **0.2s**: Small changes: button hover text and background, label state changes
-- **0.3s**: Closing small and medium surfaces
-- **0.4s**: Opening panels and modals; color change on medium and large surfaces; closing large surfaces
-- **0.5s**: Opening and closing very large surfaces (low-contrast backdrops); slow-motion elements
+- **0.3s**: Closing small and medium surfaces; closing everything else.
+- **0.4s**: Opening panels, modals, very large surfaces, low-contrast backdrops, overlapping backdrops; color change on medium and large surfaces.
 - **0.7-1s**: High-contrast backdrops; full page layout entrance
 
 Low-contrast color changes take the shorter end of the range, because slow low-contrast fades produce color banding.
