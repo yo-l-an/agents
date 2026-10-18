@@ -175,7 +175,7 @@ A morph animates between two layouts of the same place, like smart animate: elem
     - Context menus: delay close 0.25s, animate-in the selected option with a blink (hovered → unselected → selected).
 - **User select**: Prevent user-select in interactive elements: buttons, links (outside paragraphs), menus, pagers. Images should never be selected anywhere (only the alt text).
 - **Native buttons feel**: Listen for `pointerdown`, `mouseleave` and `pointerup`. After a `pointerdown`, if no `mouseleave` was triggered until the `pointerup`, run the action. `mouseleave` is a way to cancel the action. This only applies to action buttons (JS): they should behave as immovable objects and maintain the active state during this behaviour, `mouseleave` remove the active state. Links remain draggable and cancellable on drag.
-- **Pointerdown buttons**: The action should run on `pointerdown` for small non-destructive actions that slow down the user : list and graph filters, segmented controls, adding a tab, opening a menu. The click might still be pressed, avoid double fire.
+- **Pointerdown buttons**: The action should run on `pointerdown` for small non-destructive actions that slow down the user : list and graph filters, segmented controls, adding a tab, opening a menu. The click might still be pressed, avoid double fire. Avoid in places we need drag (carousels, movable list elements).
 - **Hover**: put hover styles inside `@media (hover: hover)` so touch devices skip them.
 
 ### Hit layer
