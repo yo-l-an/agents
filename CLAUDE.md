@@ -18,6 +18,6 @@ Commit your own work. The user does the pushing.
 
 A commit is _pending_ until it has been pushed (`git log @{u}..` lists them). You may rewrite pending commits.
 
-When the user's next instruction fixes or tweaks the work you just committed, fold the fix into those pending commits instead of adding one on top. Use `git commit --amend`, or `git reset --soft` and recommit. The history should show the finished feature, not each attempt it took to get there.
+When the user's next instruction fixes or tweaks the work you just committed, fold the fix into those pending commits instead of adding one on top. Verify with `git fetch` and `git log @{u}..`, then use `git commit --amend`, or `git reset --soft` and recommit. The history should show the finished feature, not each attempt it took to get there.
 
 The test for same scope: would the fix fit under the original commit's message? If yes, rewrite. If the instruction moves to new work, leave the pending commits as they are and commit on top.
