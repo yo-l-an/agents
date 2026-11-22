@@ -30,7 +30,7 @@ if (Test-Path "$InstallDir\server.py") {
     git -c advice.detachedHead=false clone --depth 1 --branch $Version https://github.com/houyhlouis/antigravity-mcp.git $InstallDir
 }
 
-Write-Step "agy permission rules (trusted dev tools allowed, dangerous commands hard-denied)"
+Write-Step "agy permission rules (all commands allowed, dangerous ones hard-denied)"
 $homeRule = "/Users/$env:USERNAME"
 & $python "$here\merge.py" agy "$env:USERPROFILE\.gemini\antigravity-cli\settings.json" "$here\agy-permissions.json" $homeRule
 
