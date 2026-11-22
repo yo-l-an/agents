@@ -10,8 +10,12 @@ the pin list (~/.gemini-workers/pinned.json): pinned workers are never deleted b
 import argparse
 import json
 import os
+import shutil
 import sqlite3
+import subprocess
 import sys
+import threading
+import time
 import webbrowser
 from contextlib import contextmanager
 from pathlib import Path
@@ -21,6 +25,26 @@ from urllib.parse import parse_qs, urlparse
 from prune import find_db, load_pins, save_pins
 
 DB = find_db()
+USAGE = {"groups": None, "error": None, "at": None}
+
+
+def watch_usage(every=120):
+    """Keep the account quota fresh. `agy -p /usage` is a slash command: it reads the quota
+    without calling a model or saving a conversation, in about 2 seconds."""
+    agy = shutil.which("agy")
+    while True:
+        try:
+            if not agy:
+                raise RuntimeError("agy is not on PATH")
+            out = subprocess.run([agy, "--output-format", "json", "-p", "/usage"], capture_output=True,
+                                 text=True, encoding="utf-8", timeout=90,
+                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            data = json.loads(out.stdout)
+            groups = data["command"]["data"]["groups"]
+            USAGE.update(groups=groups, error=None, at=time.time())
+        except Exception as exc:  # keep the last good reading, report why this one failed
+            USAGE.update(error=str(exc) or type(exc).__name__)
+        time.sleep(every)
 SHOWN = ("turn_started", "steer", "thought", "message", "tool_call", "tool_update", "file_change",
          "request_opened", "request_resolved", "turn_completed", "background_started",
          "background_settled", "process_exited", "system")
@@ -101,6 +125,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if url.path == "/":
                 self.send(200, PAGE, "text/html; charset=utf-8")
+            elif url.path == "/api/usage":
+                self.send(200, json.dumps(USAGE), "application/json")
             elif url.path == "/api/tasks":
                 self.send(200, json.dumps(tasks()), "application/json")
             elif url.path == "/api/events":
@@ -149,7 +175,9 @@ main{flex:1;display:flex;flex-direction:column;min-width:0}
 header{padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 header .meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 label{color:var(--dim);font-size:12px;user-select:none}
-#feed{flex:1;overflow:auto;padding:12px 20px 40px}
+#feed{flex:1;overflow:auto;padding:12px 20px 200px}
+#chin{flex:none;display:flex;align-items:center;padding:6px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--dim)}
+#usage{display:flex;gap:24px;cursor:default}#usage>span{display:flex;gap:10px}
 .ev{margin:6px 0;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
 .ev .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-right:8px}
 .ev.thought{background:transparent;border:none;padding:6px 2px;font-size:14.5px}
@@ -175,7 +203,8 @@ label{color:var(--dim);font-size:12px;user-select:none}
 <label><input type="checkbox" id="thoughts" checked> thoughts</label>
 <label><input type="checkbox" id="follow" checked> follow</label>
 <label title="Pinned workers are kept; others are deleted 7 days after their last message"><input type="checkbox" id="keep"> do not delete after 7 days</label></header>
-<div id="feed"><div class="empty">Live view of the antigravity broker. Read-only.</div></div></main>
+<div id="feed"><div class="empty">Live view of the antigravity broker. Read-only.</div></div>
+<footer id="chin"><span>Reading quota…</span></footer></main>
 <script>
 const $=s=>document.querySelector(s);let sel=null,after=0,tools={},list=[],lastMsg=null,lastThought=null;
 const live=t=>t.status!=='closed'&&(t.turn_status==='in_progress'||t.turn_status==='running'||t.activity==='background'||t.status==='working'||t.status==='running');
@@ -237,7 +266,23 @@ $('#keep').onchange=async e=>{if(!sel)return;keepBusy=true;const want=e.target.c
  try{const r=await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:sel,pinned:want})});if(!r.ok)throw 0}
  catch(_){e.target.checked=!want;$('#sub').textContent='could not save the pin'}
  keepBusy=false;loadTasks()};
-loadTasks();setInterval(poll,1500);setInterval(loadTasks,4000);
+// Usage of the Gemini models, the ones the workers run on. The 5-hour window is the session.
+// Each reads: label, percentage used, reset time ("00:00", or "Fri. 06:00" when not today), time left.
+const two=n=>String(n).padStart(2,'0');
+function resets(iso){const t=new Date(iso),now=new Date(),s=Math.max(0,(t-now)/1000);
+ const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+ const clock=two(t.getHours())+':'+two(t.getMinutes());
+ const at=t.toDateString()===now.toDateString()?clock:t.toLocaleDateString('en-US',{weekday:'short'})+'. '+clock;
+ return `${at} (${d?`${d}d ${h}h`:h?`${h}h${two(m)}`:`${m}m`})`}
+function quota(label,b){const q=el('span');q.append(el('span',null,label),el('b',null,Math.round(100*(1-(b.remaining_fraction??1)))+'%'));
+ if(b.reset_time)q.append(el('span',null,resets(b.reset_time)));return q}
+async function loadUsage(){let u;try{u=await (await fetch('/api/usage')).json()}catch(e){return}const box=el('span');box.id='usage';
+ const g=(u.groups||[]).find(x=>/^gemini models$/i.test(x.name))||(u.groups||[]).find(x=>/gemini/i.test(x.name));
+ if(!g){box.textContent=u.error?'Usage unavailable':'Reading usage…';$('#chin').replaceChildren(box);return}
+ const by=w=>(g.buckets||[]).find(b=>b.window===w);
+ if(by('5h'))box.append(quota('Session',by('5h')));if(by('weekly'))box.append(quota('Week',by('weekly')));
+ if(u.at)box.title='Updated '+ago(u.at);$('#chin').replaceChildren(box)}
+loadTasks();loadUsage();setInterval(poll,1500);setInterval(loadTasks,4000);setInterval(loadUsage,30000);
 </script></body></html>"""
 
 
@@ -266,6 +311,7 @@ def main():
         return 0
     print(f"Gemini workers viewer at {url} (read-only). Close this window or press Ctrl+C to stop.")
     print(f"database: {DB}" + ("" if os.path.exists(DB) else "  (missing: start a worker first)"))
+    threading.Thread(target=watch_usage, daemon=True).start()
     if not a.no_browser:
         webbrowser.open(url)
     try:
