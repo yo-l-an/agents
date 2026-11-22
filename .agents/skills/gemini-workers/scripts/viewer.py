@@ -4,10 +4,10 @@
     It opens http://localhost:7380 and runs until its console window is closed.
 
 Reads the antigravity broker's SQLite store in read-only mode, so it cannot change,
-slow down or be seen by any worker or by the lead. Binds to 127.0.0.1 only.
+slow down or be seen by any worker or by the lead. Binds to 127.0.0.1 only. Its one write is
+the pin list (~/.gemini-workers/pinned.json): pinned workers are never deleted by prune.py.
 """
 import argparse
-import glob
 import json
 import os
 import sqlite3
@@ -18,19 +18,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-def find_db():
-    """The broker's store. A broker started by a packaged (MSIX) app, such as the Claude desktop
-    app, writes into that app's LocalCache, which only the app's own processes see at the plain
-    path. Take the most recently written of the plain path and every package copy."""
-    local = os.environ.get("LOCALAPPDATA", "")
-    found = [os.path.join(local, "AntigravityMCP", "state.sqlite3")]
-    found += glob.glob(os.path.join(local, "Packages", "*", "LocalCache", "Local", "AntigravityMCP", "state.sqlite3"))
-
-    def written(p):
-        return max((os.path.getmtime(f) for f in (p, p + "-wal") if os.path.exists(f)), default=-1)
-
-    return max(found, key=written)
-
+from prune import find_db, load_pins, save_pins
 
 DB = find_db()
 SHOWN = ("turn_started", "steer", "thought", "message", "tool_call", "tool_update", "file_change",
@@ -57,6 +45,7 @@ def connect():
 
 
 def tasks():
+    pins = load_pins()
     with connect() as c:
         rows = c.execute("select id, status, created, data from tasks order by created desc").fetchall()
         out = []
@@ -71,7 +60,7 @@ def tasks():
                 "workdir": d.get("workdir") or d.get("cwd"), "model": d.get("model"),
                 "turn": d.get("turn_id"), "turn_status": d.get("turn_status"), "activity": d.get("activity"),
                 "last_seq": last[0] or 0, "last_ts": last[1], "context": u.get("context"),
-                "tokens": (u.get("usage") or {}).get("totalTokens"),
+                "tokens": (u.get("usage") or {}).get("totalTokens"), "pinned": tid in pins,
             })
         return out
 
@@ -122,6 +111,23 @@ class Handler(BaseHTTPRequestHandler):
             sys.stderr.write(f"{url.path}: {exc} (database: {DB})\n")
             self.send(503, json.dumps({"error": f"{exc} (database: {DB})"}), "application/json")
 
+    def do_POST(self):
+        # The only write: the pin list, never the broker's database. Same-origin JSON only,
+        # so another web page cannot pin or unpin through the browser.
+        origin = self.headers.get("Origin", "")
+        if urlparse(self.path).path != "/api/pin" or not origin.startswith(("http://localhost:", "http://127.0.0.1:")) \
+                or self.headers.get("Content-Type") != "application/json":
+            self.send(403, "forbidden", "text/plain")
+            return
+        try:
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            pins = load_pins()
+            (pins.add if body["pinned"] else pins.discard)(str(body["task"]))
+            save_pins(pins)
+            self.send(200, json.dumps({"pinned": bool(body["pinned"])}), "application/json")
+        except (KeyError, ValueError, OSError) as exc:
+            self.send(400, json.dumps({"error": str(exc)}), "application/json")
+
 
 PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -134,6 +140,8 @@ PAGE = r"""<!doctype html>
 #pick:hover{background:var(--bg)}#pick .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#pick .caret{color:var(--dim);font-size:11px}
 #menu{position:fixed;inset:auto;top:52px;left:12px;margin:0;padding:6px;width:min(380px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgb(0 0 0/.18)}
 .task{padding:7px 10px;border-radius:7px;cursor:pointer}.task:hover{background:var(--bg)}
+.fin{margin-top:4px;border-top:1px solid var(--line);padding-top:4px}.fin>summary{cursor:pointer;padding:6px 10px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.none{padding:6px 10px}.pin{font-size:11px;margin-right:4px}
 .task.sel{background:color-mix(in srgb,var(--accent) 12%,transparent)}.task b{display:block;font-weight:600;word-break:break-all}
 .meta{color:var(--dim);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--dim)}
 .dot.live{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}.dot.wait{background:var(--warn)}.dot.fail{background:var(--bad)}
@@ -165,7 +173,8 @@ label{color:var(--dim);font-size:12px;user-select:none}
 <div id="menu" popover><div id="tasks"></div></div>
 <main><header><button id="pick" popovertarget="menu" title="Switch worker"><span id="pdot" class="dot"></span><span class="name" id="title">Gemini workers</span><span class="caret">▾</span></button><span class="meta" id="sub"></span>
 <label><input type="checkbox" id="thoughts" checked> thoughts</label>
-<label><input type="checkbox" id="follow" checked> follow</label></header>
+<label><input type="checkbox" id="follow" checked> follow</label>
+<label title="Pinned workers are kept; others are deleted 7 days after their last message"><input type="checkbox" id="keep"> do not delete after 7 days</label></header>
 <div id="feed"><div class="empty">Live view of the antigravity broker. Read-only.</div></div></main>
 <script>
 const $=s=>document.querySelector(s);let sel=null,after=0,tools={},list=[],lastMsg=null,lastThought=null;
@@ -174,16 +183,20 @@ const ago=ts=>{if(!ts)return'';const s=Math.round(Date.now()/1000-ts);return s<6
 const hhmm=ts=>new Date(ts*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 function dot(t){const d=el('span','dot');if(live(t))d.classList.add('live');else if(t.status==='waiting'||t.status==='needs_resume')d.classList.add('wait');else if(/fail|error/.test(t.turn_status||''))d.classList.add('fail');return d}
+const finished=t=>['closed','archived','interrupted'].includes(t.status);let finOpen=false,keepBusy=false;
 async function loadTasks(){let got;try{got=await (await fetch('/api/tasks')).json()}catch(e){$('#sub').textContent='viewer not reachable';return}
  if(!Array.isArray(got)){$('#sub').textContent='cannot read workers: '+(got.error||'unknown error');return}list=got;
  if(!list.length){$('#title').textContent='No workers yet'}
  const box=$('#tasks');box.textContent='';list.sort((a,b)=>(live(b)-live(a))||((b.last_ts||0)-(a.last_ts||0)));
  if(!sel&&list.length)pick(list[0].id);
- for(const t of list){const d=el('div','task'+(t.id===sel?' sel':''));d.onclick=()=>{$('#menu').hidePopover();if(t.id!==sel)pick(t.id)};const b=el('b');b.append(dot(t),t.name);d.append(b);
+ const done=list.filter(finished);let fin=null;
+ if(done.length){fin=el('details','fin');fin.open=finOpen;fin.ontoggle=()=>{finOpen=fin.open};fin.append(el('summary',null,`Finished (${done.length})`))}
+ for(const t of list){const d=el('div','task'+(t.id===sel?' sel':''));d.onclick=()=>{$('#menu').hidePopover();if(t.id!==sel)pick(t.id)};const b=el('b');b.append(dot(t));if(t.pinned)b.append(el('span','pin','📌'));b.append(t.name);d.append(b);
   const where=(t.workdir||'').split(/[\\/]/).filter(Boolean).pop()||'';
   d.append(el('div','meta',`${t.status}${t.activity==='background'?' · background':''} · ${t.turn||''} ${t.turn_status||''} · ${ago(t.last_ts)}`));
-  d.append(el('div','meta',[where,t.model,t.context?Math.round(100*t.context.used/t.context.size)+'% context':''].filter(Boolean).join(' · ')));box.append(d)}
- const t=list.find(x=>x.id===sel);if(t){$('#title').textContent=t.name;$('#pdot').replaceWith(Object.assign(dot(t),{id:'pdot'}));const c=t.context?` · context ${Math.round(100*t.context.used/t.context.size)}%`:'';
+  d.append(el('div','meta',[where,t.model,t.context?Math.round(100*t.context.used/t.context.size)+'% context':''].filter(Boolean).join(' · ')));(finished(t)?fin:box).append(d)}
+ if(fin){if(done.length===list.length)box.append(el('div','meta none','No active workers'));box.append(fin)}
+ const t=list.find(x=>x.id===sel);if(t){$('#title').textContent=t.name;if(!keepBusy)$('#keep').checked=!!t.pinned;$('#pdot').replaceWith(Object.assign(dot(t),{id:'pdot'}));const c=t.context?` · context ${Math.round(100*t.context.used/t.context.size)}%`:'';
   $('#sub').textContent=`${t.status}${t.activity==='background'?' (background)':''} · ${t.workdir||''}${t.tokens?' · '+(t.tokens/1e6).toFixed(1)+'M tokens':''}${c}`}}
 function pick(id){sel=id;after=0;tools={};lastMsg=lastThought=group=null;$('#feed').textContent='';loadTasks();poll()}
 function card(cls,kind,text,ts){const e=el('div','ev '+cls);if(ts)e.append(el('span','time',hhmm(ts)));e.append(el('span','k',kind));if(text!=null)e.append(document.createTextNode(text));return e}
@@ -220,6 +233,10 @@ async function poll(){if(!sel)return;const id=sel;try{const evs=await (await fet
  if(id!==sel)return;const first=after===0;for(const ev of evs){render(ev);after=ev.seq}
  if(first){const f=$('#feed');f.scrollTop=f.scrollHeight}}catch(e){}}
 $('#thoughts').onchange=e=>document.querySelectorAll('.ev.thought').forEach(t=>t.hidden=!e.target.checked);
+$('#keep').onchange=async e=>{if(!sel)return;keepBusy=true;const want=e.target.checked;
+ try{const r=await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:sel,pinned:want})});if(!r.ok)throw 0}
+ catch(_){e.target.checked=!want;$('#sub').textContent='could not save the pin'}
+ keepBusy=false;loadTasks()};
 loadTasks();setInterval(poll,1500);setInterval(loadTasks,4000);
 </script></body></html>"""
 

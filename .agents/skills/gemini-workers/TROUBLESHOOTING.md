@@ -35,6 +35,7 @@ Its summary says it is waiting ("waiting for completion", "running tests") or th
 
 - `needs_resume` or `uncertain`: run `agy_resume`, then read its `reconciliation` (`unknown`, `next_steps`) and `agy_history` before you give it new work.
 - `closed` while its `summary` says it was still working: a broker restart cut it off (`server.py stop`, or `setup.ps1` after a config change). Its conversation is kept. Read `git status` and `git log` in its folder for what landed, then `agy_send` a prompt asking it to find where it stopped and finish. `agy_send` reopens the session.
+- A task is not found: `scripts/prune.py` deletes the broker's record of a worker whose last message is more than 7 days old, unless the user pinned it. Its Antigravity conversation remains: find it with `agy_sessions` (`action: "list"`) and import it.
 
 ## Stuck native subagent
 

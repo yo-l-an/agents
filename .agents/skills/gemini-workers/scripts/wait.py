@@ -133,6 +133,10 @@ def main():
     ap.add_argument("--timeout", type=int, default=4 * 3600)
     a = ap.parse_args()
 
+    # Housekeeping, detached so it never delays the wait: forget workers idle for over 7 days.
+    subprocess.Popen([sys.executable, str(Path(__file__).with_name("prune.py"))],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+
     rules = deny_rules()
     allowed = []
     deadline = time.time() + a.timeout
