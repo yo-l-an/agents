@@ -1,6 +1,6 @@
 """Block until Gemini workers need the lead, polling the antigravity broker locally.
 
-    py -3.15 wait.py TASK_ID [TASK_ID ...] [--any] [--interval 30] [--timeout 14400]
+    py -3 wait.py TASK_ID [TASK_ID ...] [--any] [--interval 30] [--timeout 14400]
 
 Exits with one compact JSON report:
   0  settled      every task (or one, with --any) finished its turn with no background work

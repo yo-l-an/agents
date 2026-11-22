@@ -1,6 +1,6 @@
 # Gemini workers: troubleshooting
 
-Health check first: `py -3.15 C:\Tools\antigravity-mcp\server.py doctor`. It needs `py -3.15`, because `py -3` opens Python 3.10, which is too old.
+Health check first: `py -3 C:\Tools\antigravity-mcp\server.py doctor`.
 
 ## Failed calls
 

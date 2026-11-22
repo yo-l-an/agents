@@ -41,7 +41,7 @@ Record the base commit with `git -C <repo> rev-parse HEAD`, then call `agy_start
 Start one background waiter for all your workers. Use the Bash tool with `run_in_background: true`:
 
 ```bash
-py -3.15 "$(cygpath -w "$HOME/.claude/skills/gemini-workers/scripts/wait.py")" <task_id> [<task_id> ...] [--any]
+py -3 "$(cygpath -w "$HOME/.claude/skills/gemini-workers/scripts/wait.py")" <task_id> [<task_id> ...] [--any]
 ```
 
 The waiter is your only watch. It checks the broker every 30 s, locally and for free, and exits once with a compact JSON report. You are notified when it exits. Until then, stay idle or do other work.

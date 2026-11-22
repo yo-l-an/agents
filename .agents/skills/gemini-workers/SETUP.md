@@ -29,7 +29,7 @@ Path rules (`write_file(...)`, `read_file(...)`) match by path, so their prefix 
 
 To change a rule:
 1. Edit `setup/agy-permissions.json`.
-2. Run `py -3.15 setup/check-rules.py setup/agy-permissions.json`. Every everyday dev command must pass and every dangerous one must be blocked. Add your new case to its `SAFE` or `DANGER` list.
+2. Run `py -3 setup/check-rules.py setup/agy-permissions.json`. Every everyday dev command must pass and every dangerous one must be blocked. Add your new case to its `SAFE` or `DANGER` list.
 3. Re-run `setup.ps1`.
 4. For live proof, run a one-shot `agy -p` with `--mode accept-edits` in a temp git repo, asking it to run the command exactly. A blocked command reports `Matches user-configured deny rule`.
 
@@ -41,4 +41,6 @@ To change a rule:
 
 ## Upgrade
 
-Run `py -3.15 C:\Tools\antigravity-mcp\server.py stop`. Then run `git -C C:\Tools\antigravity-mcp fetch --tags`, check out the new tag, update `$Version` in `setup.ps1`, and restart Claude Code.
+Run `py -3 C:\Tools\antigravity-mcp\server.py stop`. Then run `git -C C:\Tools\antigravity-mcp fetch --tags`, check out the new tag, update `$Version` in `setup.ps1`, and restart Claude Code.
+
+The Claude Code registration holds the full path to `python.exe`. After a Python upgrade that changes that path, run `claude mcp remove antigravity -s user`, then re-run `setup.ps1` to register the new interpreter.
