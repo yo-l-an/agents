@@ -14,8 +14,18 @@ The script is safe to re-run. It backs up each file before changing it (`*.bak-<
 | `setup/antigravity-mcp.config.toml` | the server config at `%APPDATA%\AntigravityMCP\config.toml` |
 | `setup/setup.ps1` | also installs antigravity-mcp v0.1.1 in `C:\Tools\antigravity-mcp` with the newest Python 3.11 or later, registers it in Claude Code at user scope, and allows `mcp__antigravity` in `~/.claude/settings.json` |
 | `setup/check-rules.py` | an offline test of the deny rules |
+| `setup/check-gate.py` | an offline test of the waiter's gate (`scripts/wait.py`) |
 
 Running workers keep the rules they started with. New workers, or ones reopened after an idle close, get the new rules.
+
+## The waiter's gate
+
+`scripts/wait.py` allows routine prompts so the lead sees only the rest. It reads its deny regexes from `setup/agy-permissions.json` (one source with agy), and adds its own `LEAD_RULES` and a path check. To change what it allows:
+
+1. Edit `LEAD_RULES` or the localhost and path rules in `scripts/wait.py`. For a folder that only one task needs, pass `--allow-path` instead.
+2. Add the command to `ALLOW` or `ESCALATE` in `setup/check-gate.py`, then run `py -3 setup/check-gate.py`. Every case must pass.
+
+Running waiters keep the gate they started with: start the waiter again after a change.
 
 ## agy permission rules
 

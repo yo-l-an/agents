@@ -16,6 +16,19 @@ Health check first: `py -3 C:\Tools\antigravity-mcp\server.py doctor`.
 
 The broker call behind it (`server.py call agy_requests` or `agy_list`) failed. Run `doctor`. If the server is down, see the last section.
 
+## Every command prompts
+
+agy asks before each shell command, even with `allow: ["command(*)"]`. Seen on tasks started with a plain `workdir`: `~/.gemini/antigravity-cli/cli.log` shows `toolPermission=request-review`, and a deny rule then turns into a prompt instead of a block (an `Invoke-WebRequest` reached the lead). The waiter's gate handles this: it answers routine commands, and re-checks the deny rules itself, so a deny rule that agy skips still stops at the lead. Run the waiter with the gate on (the default) and read `why` on each request it hands you.
+
+## Worktrees
+
+- `agy_start` with `worktree` fails with `worktree_refused` ("Windows could not verify object ownership or permissions"): make the worktrees with `scripts/worktree.py create` and start each worker on its folder with `workdir`.
+- `git worktree remove --force` fails with "Directory not empty" (long `node_modules` paths on Windows), leaving the folder and the branch: run `scripts/worktree.py cleanup`, which deletes the folder with long-path support, prunes, and deletes the branch.
+
+## A worker ends its turn with work left
+
+Its summary says it is waiting ("waiting for completion", "running tests") or the done-when criteria are not met. `agy_send` the remaining items, tell it to wait for commands inside the turn, and start the waiter again.
+
 ## Interrupted or cut-off tasks
 
 - `needs_resume` or `uncertain`: run `agy_resume`, then read its `reconciliation` (`unknown`, `next_steps`) and `agy_history` before you give it new work.
