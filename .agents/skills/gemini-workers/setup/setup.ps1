@@ -30,21 +30,24 @@ if (Test-Path "$InstallDir\server.py") {
     git -c advice.detachedHead=false clone --depth 1 --branch $Version https://github.com/houyhlouis/antigravity-mcp.git $InstallDir
 }
 
-Write-Step "agy hard deny rules"
+Write-Step "agy permission rules (trusted dev tools allowed, dangerous commands hard-denied)"
 $homeRule = "/Users/$env:USERNAME"
-& $python "$here\merge.py" deny "$env:USERPROFILE\.gemini\antigravity-cli\settings.json" "$here\agy-deny.json" $homeRule
+& $python "$here\merge.py" agy "$env:USERPROFILE\.gemini\antigravity-cli\settings.json" "$here\agy-permissions.json" $homeRule
 
 Write-Step "Server config (approval_relay) with owner-only permissions"
 $cfgDir = "$env:APPDATA\AntigravityMCP"
 $cfg = "$cfgDir\config.toml"
 New-Item -ItemType Directory -Force $cfgDir | Out-Null
-[IO.File]::WriteAllText($cfg, [IO.File]::ReadAllText("$here\antigravity-mcp.config.toml"), (New-Object Text.UTF8Encoding $false))
+$wanted = [IO.File]::ReadAllText("$here\antigravity-mcp.config.toml")
+$changed = -not (Test-Path $cfg) -or ([IO.File]::ReadAllText($cfg) -ne $wanted)
+if ($changed) { [IO.File]::WriteAllText($cfg, $wanted, (New-Object Text.UTF8Encoding $false)) }
 $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 foreach ($p in @($cfgDir, $cfg)) {
     $inherit = if ($p -eq $cfgDir) { "(OI)(CI)" } else { "" }
     icacls $p /inheritance:r /grant:r "${me}:$inherit(F)" "*S-1-5-18:$inherit(F)" "*S-1-5-32-544:$inherit(F)" | Out-Null
 }
-& $python "$InstallDir\server.py" stop | Out-Null
+# Restarting the broker closes live worker sessions, so only do it when the config changed.
+if ($changed) { Write-Host "config changed: restarting broker"; & $python "$InstallDir\server.py" stop | Out-Null }
 $doctor = & $python "$InstallDir\server.py" doctor
 $doctor | Select-String 'signed_in|acp_available|findings|^ok ='
 

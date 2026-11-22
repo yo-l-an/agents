@@ -1,6 +1,6 @@
 """Idempotent JSON merges for setup.ps1. Each run backs up the target first.
 
-    merge.py deny   <agy settings.json> <agy-deny.json> <home as /Users/name>
+    merge.py agy    <agy settings.json> <agy-permissions.json> <home as /Users/name>
     merge.py allow  <claude settings.json> <rule>
 """
 import json
@@ -35,11 +35,13 @@ def add_rules(data, key, rules):
 
 def main():
     cmd = sys.argv[1]
-    if cmd == "deny":
+    if cmd == "agy":
         target, template, home = sys.argv[2:5]
-        rules = [r.replace("{HOME}", home) for r in load(template)["deny"]]
+        spec = load(template)
         data = load(target)
-        added = add_rules(data, "deny", rules)
+        added = []
+        for key in ("allow", "deny"):
+            added += add_rules(data, key, [r.replace("{HOME}", home) for r in spec.get(key, [])])
     elif cmd == "allow":
         target, rule = sys.argv[2:4]
         data = load(target)
