@@ -200,9 +200,9 @@ label{color:var(--dim);font-size:12px;user-select:none}
 </style></head><body>
 <div id="menu" popover><div id="tasks"></div></div>
 <main><header><button id="pick" popovertarget="menu" title="Switch worker"><span id="pdot" class="dot"></span><span class="name" id="title">Gemini workers</span><span class="caret">▾</span></button><span class="meta" id="sub"></span>
-<label><input type="checkbox" id="thoughts" checked> thoughts</label>
-<label><input type="checkbox" id="follow" checked> follow</label>
-<label title="Pinned workers are kept; others are deleted 7 days after their last message"><input type="checkbox" id="keep"> do not delete after 7 days</label></header>
+<label title="Show the worker's thinking. Untick to see only its messages and actions."><input type="checkbox" id="thoughts" checked> thoughts</label>
+<label title="Scroll to new activity as it arrives. Scrolling up pauses it until you are back at the bottom."><input type="checkbox" id="follow" checked> follow</label>
+<label title="Keep this worker and its transcript. Unpinned workers are deleted 7 days after their last message."><input type="checkbox" id="keep"> do not delete after 7 days</label></header>
 <div id="feed"><div class="empty">Live view of the antigravity broker. Read-only.</div></div>
 <footer id="chin"><span>Reading quota…</span></footer></main>
 <script>
