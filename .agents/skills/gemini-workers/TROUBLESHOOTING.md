@@ -20,6 +20,8 @@ The broker call behind it (`server.py call agy_requests` or `agy_list`) failed. 
 
 agy asks before each shell command, even with `allow: ["command(*)"]`. Seen on tasks started with a plain `workdir`: `~/.gemini/antigravity-cli/cli.log` shows `toolPermission=request-review`, and a deny rule then turns into a prompt instead of a block (an `Invoke-WebRequest` reached the lead). The waiter's gate handles this: it answers routine commands, and re-checks the deny rules itself, so a deny rule that agy skips still stops at the lead. Run the waiter with the gate on (the default) and read `why` on each request it hands you.
 
+Root cause, tested on agy 1.5.14 with a bare ACP client: the `acp` engine never loads `settings.json` permissions (its log has no `CLI settings initialized` line, whatever `--cli_dir_name` is). Both `git --version` and a denied `curl` reach the client as prompts. The `headless` engine (`agy_start` with `engine: "headless"`) applies them natively. In the same tests, an allowed command ran with no request, a denied one came back `BLOCKED ... Matches user-configured deny rule`, and an `agy_send` follow-up kept the conversation. Headless costs mid-turn questions, mid-turn steering, and the thinking stream. Prefer it for long autonomous turns, or when no waiter will be running to gate the prompts.
+
 ## Worktrees
 
 - `agy_start` with `worktree` fails with `worktree_refused` ("Windows could not verify object ownership or permissions"): make the worktrees with `scripts/worktree.py create` and start each worker on its folder with `workdir`.

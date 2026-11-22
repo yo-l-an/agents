@@ -6,7 +6,7 @@
 powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\skills\gemini-workers\setup\setup.ps1"
 ```
 
-The script is safe to re-run. It backs up each file before changing it (`*.bak-<timestamp>`), and it restarts the broker only when the server config changed, because a restart cuts off live workers.
+Run it from Claude Code inside the Claude desktop app (see "Packaged Claude app" below). The script is safe to re-run. It backs up each file before changing it (`*.bak-<timestamp>`), and it restarts the broker only when the server config changed, because a restart cuts off live workers.
 
 | File | Sets |
 |---|---|
@@ -14,6 +14,7 @@ The script is safe to re-run. It backs up each file before changing it (`*.bak-<
 | `setup/antigravity-mcp.config.toml` | the server config at `%APPDATA%\AntigravityMCP\config.toml` |
 | `setup/setup.ps1` | also installs antigravity-mcp v0.1.1 in `C:\Tools\antigravity-mcp` with the newest Python 3.11 or later, registers it in Claude Code at user scope, and allows `mcp__antigravity` in `~/.claude/settings.json` |
 | `setup/check-rules.py` | an offline test of the deny rules |
+| `scripts/viewer.cmd`, `scripts/viewer.py` | the user's live view of every worker. Not started by `setup.ps1` and never runs on its own: the user double-clicks `viewer.cmd`, which opens `http://localhost:7380` in the browser and serves it until its console window is closed. Thinking and messages show in full; the tool calls and edits between them fold into one collapsed group each, and only the current group is open. It reads the broker's database read-only, so it never touches a worker, and the lead has no part in it. It finds the database on its own, the packaged app's copy included; `--db <path>` overrides that. When port 7380 is taken, run `viewer.cmd --port <free port>`. |
 | `setup/check-gate.py` | an offline test of the waiter's gate (`scripts/wait.py`) |
 
 Running workers keep the rules they started with. New workers, or ones reopened after an idle close, get the new rules.
@@ -48,6 +49,14 @@ To change a rule:
 - `approval_relay = true` lets the lead approve one-time permission prompts. `max_live_sessions = 4` caps the workers.
 - The config folder and file must be writable by this Windows account only, or the server rejects them with `Configuration must be user-owned`. `setup.ps1` sets this up: owner, SYSTEM and Administrators only, with no inheritance.
 - The file is UTF-8 without a BOM. After a manual change, run `server.py stop`.
+
+## Packaged Claude app
+
+The Claude desktop app for Windows is an MSIX package. Windows redirects what its child processes write under `%LOCALAPPDATA%` and `%APPDATA%` into the package's own folder, `%LOCALAPPDATA%\Packages\<Claude package>\LocalCache\{Local,Roaming}`. Inside the app they still see it at the plain path; every other process sees only the plain path. That folder holds the broker the app starts: its state (`Local\AntigravityMCP`) and its config (`Roaming\AntigravityMCP\config.toml`).
+
+- Run `setup.ps1` and `server.py` (`stop`, `doctor`, `call`) from Claude Code inside the app. From a normal terminal they work on the plain-path copies, which the app's broker never reads.
+- To edit the config by hand from outside the app, edit the package's copy.
+- `~/.gemini` and `~/.claude` sit outside AppData, so every process shares them.
 
 ## Upgrade
 
