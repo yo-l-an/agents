@@ -29,7 +29,12 @@ A worker starts **cold**: it sees none of this conversation. Each brief carries:
 - **Scope**: the files and folders it owns.
 - **Test**: the command or check that proves the work.
 - **Autonomy**: "Work to the end without asking. Where a choice is open, take the conservative option and record it in the commit message."
-- **Checkpoints**: "Commit at each milestone and when done. Each message gives what changed, why, the decisions you took, and the test results. Never push."
+- **Commit policy**: work it out before you brief, then write it out in full. The worker commits on its own by following it. The first source that speaks wins:
+  1. **The user's request**, for example "one commit per component", "don't commit", or "squash at the end".
+  2. **Project guidelines**: commit rules in the repo's `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` or `CONTRIBUTING.md`, including any in subfolders on the worker's path. Look for message format (Conventional Commits, gitmoji, ticket prefixes), granularity, branch rules, and required checks before committing. Also check `git log -10 --format=%s` for the house style.
+  3. **Default**: commit at each milestone and when done. Each message gives what changed, why, the decisions taken, and the test results.
+
+  Always add: "Never push, never amend or rewrite existing commits, and let the hooks run." Also tell the worker to read the project's `CLAUDE.md` or `AGENTS.md` itself before it starts.
 
 Before `agy_start`, record the base commit: `git -C <repo> rev-parse HEAD`. Keep the `task_id` and the base for each worker.
 
@@ -56,7 +61,7 @@ Requests:
 
 ## 3. Review
 
-Read the **checkpoints**: `git log --stat <base>..HEAD` in the worker's folder or worktree branch, then the diffs of the files that matter. The commits are the evidence. Read `agy_get` `view: "result"` only when the commits leave something unexplained, for example a failed test, an uncommitted change, or no commit at all.
+Read the **checkpoints**: `git log --stat <base>..HEAD` in the worker's folder or worktree branch, then the diffs of the files that matter. Add `git status` and `git diff` for the work the policy left uncommitted. The commits and the diff are the evidence. Check the commits follow the policy you gave. Read `agy_get` `view: "result"` only when the evidence leaves something unexplained, for example a failed test, or changes the policy says should have been committed.
 
 Then either:
 - **Accept** the worker: it is done.
