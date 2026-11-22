@@ -175,7 +175,7 @@ main{flex:1;display:flex;flex-direction:column;min-width:0}
 header{padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 header .meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 label{color:var(--dim);font-size:12px;user-select:none}
-#feed{flex:1;overflow:auto;padding:12px 20px 200px}
+#feed{flex:1;overflow:auto;padding:12px 20px 100px}
 #chin{flex:none;display:flex;align-items:center;padding:6px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--dim)}
 #usage{display:flex;gap:24px;cursor:default}#usage>span{display:flex;gap:10px}
 .ev{margin:6px 0;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
@@ -229,7 +229,14 @@ async function loadTasks(){let got;try{got=await (await fetch('/api/tasks')).jso
   $('#sub').textContent=`${t.status}${t.activity==='background'?' (background)':''} · ${t.workdir||''}${t.tokens?' · '+(t.tokens/1e6).toFixed(1)+'M tokens':''}${c}`}}
 function pick(id){sel=id;after=0;tools={};lastMsg=lastThought=group=null;$('#feed').textContent='';loadTasks();poll()}
 function card(cls,kind,text,ts){const e=el('div','ev '+cls);if(ts)e.append(el('span','time',hhmm(ts)));e.append(el('span','k',kind));if(text!=null)e.append(document.createTextNode(text));return e}
-function add(e){const f=$('#feed');const atEnd=f.scrollHeight-f.scrollTop-f.clientHeight<80;f.append(e);if($('#follow').checked&&atEnd)f.scrollTop=f.scrollHeight}
+function add(e){$('#feed').append(e)}
+// Follow: after each poll, jump to the end unless the user has scrolled up since the last
+// jump (the view sits above where it was left). Scrolling back near the end resumes it.
+// Content that grows in place (streamed text, output) leaves the position alone, so it is followed too.
+let leftAt=0;
+function atBottom(){const f=$('#feed');return f.scrollHeight-f.scrollTop-f.clientHeight<120}
+function follow(force){const f=$('#feed');if(!$('#follow').checked)return;
+ if(!force&&f.scrollTop<leftAt-10&&!atBottom())return;f.scrollTop=f.scrollHeight;leftAt=f.scrollTop}
 // Tool calls, edits and requests between two pieces of text share one collapsible group.
 // Only the current group (nothing written after it yet) stays open.
 let group=null;
@@ -240,7 +247,7 @@ function inGroup(e,label,cls){if(!group){group=el('details','acts');group.open=t
   group._body=el('div','body');group.append(group._body);add(group)}
  group._n++;group._count.textContent=group._n+(group._n>1?' actions':' action');
  const chip=el('code',cls||null,short(label));group._chips.append(chip);
- const f=$('#feed');const atEnd=f.scrollHeight-f.scrollTop-f.clientHeight<80;group._body.append(e);if($('#follow').checked&&atEnd)f.scrollTop=f.scrollHeight;
+ group._body.append(e);
  return chip}
 function grow(c,text){c._raw=(c._raw||'')+(text||'');c.lastChild.textContent=c._raw.trim()}
 function render(ev){const d=ev.data,k=ev.kind;
@@ -260,7 +267,8 @@ function render(ev){const d=ev.data,k=ev.kind;
  add(card('sys',k.replace('_',' '),d.reason||d.action||'',ev.ts))}
 async function poll(){if(!sel)return;const id=sel;try{const evs=await (await fetch(`/api/events?task=${id}&after=${after}`)).json();
  if(id!==sel)return;const first=after===0;for(const ev of evs){render(ev);after=ev.seq}
- if(first){const f=$('#feed');f.scrollTop=f.scrollHeight}}catch(e){}}
+ if(evs.length)follow(first)}catch(e){}}
+$('#follow').addEventListener('change',e=>{if(e.target.checked)follow(true)});
 $('#thoughts').onchange=e=>document.querySelectorAll('.ev.thought').forEach(t=>t.hidden=!e.target.checked);
 $('#keep').onchange=async e=>{if(!sel)return;keepBusy=true;const want=e.target.checked;
  try{const r=await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:sel,pinned:want})});if(!r.ok)throw 0}
