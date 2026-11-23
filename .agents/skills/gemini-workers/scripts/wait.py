@@ -12,6 +12,7 @@ Exits with one JSON line:
   0  settled      every task (or one, with --any) finished its turn with no background work
   2  attention    a request needs the lead: `requests` (compact, with `why`), `allowed` (what the gate let through)
   3  timeout      still working after --timeout seconds (just run it again)
+  4  quota        a task stopped on `quota_exhausted` or `rate_limited`: `quota_hit` lists them
   1  error        the broker call failed
 """
 import argparse
@@ -172,6 +173,13 @@ def main():
             print(json.dumps({"result": "attention", "requests": escalate, **gated,
                               "tasks": [brief(t) for t in watched]}, ensure_ascii=False))
             return 2
+        # The quota is shared by every worker: one hit means the others stop soon too.
+        hit = [t for t in watched if (t.get("error") or {}).get("code") in ("quota_exhausted", "rate_limited")]
+        if hit:
+            print(json.dumps({"result": "quota", "quota_hit": [{"task_id": t["task_id"], "name": t.get("name"),
+                                                               "code": t["error"]["code"]} for t in hit],
+                              **gated, "tasks": [brief(t) for t in watched]}, ensure_ascii=False))
+            return 4
         done = [settled(t) for t in watched]
         if (any(done) if a.any else all(done)):
             print(json.dumps({"result": "settled", **gated, "tasks": [brief(t) for t in watched]}, ensure_ascii=False))

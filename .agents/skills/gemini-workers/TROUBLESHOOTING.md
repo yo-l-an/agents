@@ -9,7 +9,7 @@ Health check first: `py -3 C:\Tools\antigravity-mcp\server.py doctor`.
 - `error.retryable`: repeat the identical call with the same `request_id`.
 - `error.uncertain`: the action may already have happened. Inspect the task with `agy_get` before you do anything else.
 - `not_signed_in`: ask the user to run `agy` in a terminal and sign in.
-- `quota_exhausted` or `rate_limited`: tell the user and stop. The quota is shared by every worker.
+- `quota_exhausted` or `rate_limited`: wait for the quota and resume, as in SKILL.md "Quota used up". The quota is shared by every worker.
 - `workspace_busy`: another task holds that folder, or one inside or around it (`ids.blocking_task_id`, `claims`). A worker that is still working: wait for it, or give the new worker its own worktree (`worktree.py create`). A finished one that still holds it (`claims` kind `subagents` or `background`): `agy_close` it.
 
 ## Waiter exits with `error`

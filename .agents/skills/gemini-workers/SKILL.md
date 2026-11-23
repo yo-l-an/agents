@@ -13,7 +13,7 @@ The tools are `mcp__antigravity__agy_*`. If they are deferred, load them all wit
 
 ## Defaults
 
-- Model: `gemini-4-neon-medium`. Go up to `gemini-4-neon-high` for hard reasoning, or down to `gemini-3.8-flash-low` for mechanical work.
+- Model: `gemini-4-neon-medium`, for every worker. Go down to `gemini-3.8-flash-low` only for mechanical work.
 - Mode: `accept-edits` for work that changes files, `plan` for pure research.
 - At most 4 live workers, the server's cap.
 - Pick a **layout** per run, and name it in every brief:
@@ -60,7 +60,24 @@ The waiter is your only watch. It polls the broker locally and for free, and exi
   - **Question**: answer `{"answers": {...}}` from the user's request, taking the conservative option where the request is silent. Stop for the user only when the answer would change the result they asked for.
   - **Permission prompt**: reply `{"decision": "allow"}` (one-time) when the action serves the brief, stays in the worker's folder, and is reversible (deleting files git tracks is). Otherwise reply `{"decision": "deny"}` and `agy_send` the safe alternative. When the gate stops on a safe command class again and again, widen `LEAD_RULES` or `--allow-path` rather than answering each one (SETUP.md).
 - `timeout` (exit 3): still working. Start it again.
+- `quota` (exit 4): a worker stopped on `quota_exhausted` or `rate_limited` (`quota_hit`). Wait for the quota, then resume: see "Quota used up" below.
 - `error` (exit 1): see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+### Quota used up
+
+The Gemini quota (5-hour and weekly) is shared by every worker. When the waiter exits with `quota`, or `agy_start` or `agy_send` fails with `quota_exhausted` or `rate_limited`, the run pauses and **resumes on its own by default**:
+
+1. Read the reset time with `agy_usage` (it spends no quota). Tell the user in one line, for example: "Gemini quota used up; the workers resume at 14:30 (in 1h20). Say stop to end the run instead."
+2. Start the quota waiter in the background, and stay idle until it exits. It sleeps until the reset, reads the quota locally, and costs nothing while it waits:
+
+   ```bash
+   py -3 "$(cygpath -w "$HOME/.claude/skills/gemini-workers/scripts/quota_wait.py")" [--min-wait 120]
+   ```
+
+   Pass `--min-wait 120` after `rate_limited`, which the quota does not show.
+3. On `available` (exit 0), `agy_send` each worker that stopped: "The quota is back. Check `git status` and `git log`, find where you stopped, and finish the brief." Do the call that failed again. Then start the waiter again.
+
+Stop only when the user says so. Then close the workers as in Land, and report what each one committed and what is left.
 
 ## 3. Review
 
