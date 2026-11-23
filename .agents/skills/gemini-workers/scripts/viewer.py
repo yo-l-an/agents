@@ -186,15 +186,21 @@ header{padding:8px 12px 7px;border-bottom:1px solid var(--line);background:var(-
 header .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
 header .controls{margin-left:auto;display:flex;flex-wrap:wrap;gap:2px 14px}
 #sub{padding-left:11px}
-@media (max-width:600px){header{align-items:flex-start}header .top{display:contents}#facts{padding-left:11px}
- header .controls{order:1;margin-left:0;padding-left:11px}}
+/* Wide: name, facts and checkboxes on one line, details below. Below 780px they no longer fit on one
+   line: name and facts share a line while they fit, then details, then the checkboxes. */
+@media (max-width:779px){header{flex-flow:row wrap;align-items:center;gap:5px 12px}header .top{display:contents}
+ #sub,header .controls{flex-basis:100%}header .controls{order:1;margin-left:0;padding-left:11px}}
+@media (max-width:479px){#facts{padding-left:11px}}
 label{color:var(--dim);font-size:12px;user-select:none}
 #feed{flex:1;overflow:auto;padding:12px 20px 100px}
 #chin{flex:none;display:flex;align-items:center;padding:6px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--dim)}
 #usage{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:2px 24px;cursor:default}#usage>span{display:flex;gap:10px;white-space:nowrap}#usage>.group{opacity:.6}
-/* Too narrow for a line per group: each group's name, then its Session and Week on their own lines. */
-@media (max-width:720px){#usage{grid-template-columns:auto;gap:1px 0}#usage>span:empty{display:none}
- #usage>.group:not(:first-child){margin-top:6px}#usage>span:not(.group){padding-left:12px}#usage>span>span:first-child{min-width:52px}}
+/* One line per group needs about 560px. Below 600px, each group's name gets its own line with Session
+   and Week side by side under it; below 440px, Session and Week stack too. */
+@media (max-width:599px){#usage{grid-template-columns:repeat(2,auto)}#usage>.group{grid-column:1/-1}
+ #usage>.group:not(:first-child){margin-top:6px}#usage>span:nth-child(3n+2){padding-left:12px}}
+@media (max-width:439px){#usage{grid-template-columns:auto;gap:1px 0}#usage>span:empty{display:none}
+ #usage>span:not(.group){padding-left:12px}#usage>span>span:first-child{min-width:52px}}
 .ev{margin:6px 0;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
 .ev .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-right:8px}
 .ev.thought{background:transparent;border:none;padding:6px 2px;font-size:14.5px}
