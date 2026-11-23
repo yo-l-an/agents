@@ -191,7 +191,10 @@ header .controls{margin-left:auto;display:flex;flex-wrap:wrap;gap:2px 14px}
 label{color:var(--dim);font-size:12px;user-select:none}
 #feed{flex:1;overflow:auto;padding:12px 20px 100px}
 #chin{flex:none;display:flex;align-items:center;padding:6px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--dim)}
-#usage{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:2px 24px;cursor:default}#usage>span{display:flex;gap:10px}#usage>.group{opacity:.6}
+#usage{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:2px 24px;cursor:default}#usage>span{display:flex;gap:10px;white-space:nowrap}#usage>.group{opacity:.6}
+/* Too narrow for a line per group: each group's name, then its Session and Week on their own lines. */
+@media (max-width:720px){#usage{grid-template-columns:auto;gap:1px 0}#usage>span:empty{display:none}
+ #usage>.group:not(:first-child){margin-top:6px}#usage>span:not(.group){padding-left:12px}#usage>span>span:first-child{min-width:52px}}
 .ev{margin:6px 0;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
 .ev .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-right:8px}
 .ev.thought{background:transparent;border:none;padding:6px 2px;font-size:14.5px}
