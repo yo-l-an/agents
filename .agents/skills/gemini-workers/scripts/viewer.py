@@ -179,7 +179,7 @@ header .meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
 label{color:var(--dim);font-size:12px;user-select:none}
 #feed{flex:1;overflow:auto;padding:12px 20px 100px}
 #chin{flex:none;display:flex;align-items:center;padding:6px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--dim)}
-#usage{display:flex;gap:24px;cursor:default}#usage>span{display:flex;gap:10px}
+#usage{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:2px 24px;cursor:default}#usage>span{display:flex;gap:10px}#usage>.group{opacity:.6}
 .ev{margin:6px 0;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
 .ev .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-right:8px}
 .ev.thought{background:transparent;border:none;padding:6px 2px;font-size:14.5px}
@@ -276,8 +276,10 @@ $('#keep').onchange=async e=>{if(!sel)return;keepBusy=true;const want=e.target.c
  try{const r=await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:sel,pinned:want})});if(!r.ok)throw 0}
  catch(_){e.target.checked=!want;$('#sub').textContent='could not save the pin'}
  keepBusy=false;loadTasks()};
-// Usage of the Gemini models, the ones the workers run on. The 5-hour window is the session.
-// Each reads: label, percentage used, reset time ("00:00", or "Fri. 06:00" when not today), time left.
+// Usage, one line per Antigravity quota group (Gemini models, Claude and GPT models, Argon).
+// A line reads: group name (dimmed), then Session (the 5-hour window) and Week, each with
+// percentage used, reset time ("00:00", or "Fri. 06:00" when not today), time left.
+// The three columns line up across lines; a group without a window leaves its cell empty.
 const two=n=>String(n).padStart(2,'0');
 function resets(iso){const t=new Date(iso),now=new Date(),s=Math.max(0,(t-now)/1000);
  const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
@@ -287,10 +289,10 @@ function resets(iso){const t=new Date(iso),now=new Date(),s=Math.max(0,(t-now)/1
 function quota(label,b){const q=el('span');q.append(el('span',null,label),el('b',null,Math.round(100*(1-(b.remaining_fraction??1)))+'%'));
  if(b.reset_time)q.append(el('span',null,resets(b.reset_time)));return q}
 async function loadUsage(){let u;try{u=await (await fetch('/api/usage')).json()}catch(e){return}const box=el('span');box.id='usage';
- const g=(u.groups||[]).find(x=>/^gemini models$/i.test(x.name))||(u.groups||[]).find(x=>/gemini/i.test(x.name));
- if(!g){box.textContent=u.error?'Usage unavailable':'Reading usage…';$('#chin').replaceChildren(box);return}
- const by=w=>(g.buckets||[]).find(b=>b.window===w);
- if(by('5h'))box.append(quota('Session',by('5h')));if(by('weekly'))box.append(quota('Week',by('weekly')));
+ const groups=u.groups||[];
+ if(!groups.length){box.textContent=u.error?'Usage unavailable':'Reading usage…';$('#chin').replaceChildren(box);return}
+ for(const g of groups){const by=w=>(g.buckets||[]).find(b=>b.window===w);
+  box.append(el('span','group',g.name),by('5h')?quota('Session',by('5h')):el('span'),by('weekly')?quota('Week',by('weekly')):el('span'))}
  if(u.at)box.title='Updated '+ago(u.at);$('#chin').replaceChildren(box)}
 loadTasks();loadUsage();setInterval(poll,1500);setInterval(loadTasks,4000);setInterval(loadUsage,30000);
 </script></body></html>"""
