@@ -1,7 +1,7 @@
 """Worker worktrees for a git repo, in a sibling folder `<repo>-wt/<name>`, one branch each.
 
-    py -3 worktree.py create  REPO BASE NAME [NAME ...]
-    py -3 worktree.py cleanup REPO NAME [NAME ...] [--into BRANCH] [--force]
+    python worktree.py create  REPO BASE NAME [NAME ...]
+    python worktree.py cleanup REPO NAME [NAME ...] [--into BRANCH] [--force]
 
 create   adds a worktree and a branch NAME from BASE for each name; prints {name: path} as JSON.
 cleanup  deletes each worktree folder (long node_modules paths included, where `git worktree remove` fails on

@@ -1,9 +1,11 @@
-# Rebuilds the gemini-workers setup on this Windows machine. Safe to re-run: each step
-# skips what is already in place, and every settings file it changes is backed up first.
-#   powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\skills\gemini-workers\setup\setup.ps1"
+# Rebuilds the gemini-workers setup on Windows. Safe to re-run: each step skips what is
+# already in place, and every settings file it changes is backed up first.
+#   powershell -ExecutionPolicy Bypass -File "<this skill>\setup\setup.ps1" [-Version v0.1.1] [-InstallDir <folder>]
+# The install folder defaults to the one Claude Code already runs, else ~\tools\antigravity-mcp.
+# With the Claude desktop app, run it from Claude Code inside the app (SETUP.md, "Packaged Claude app").
 param(
     [string]$Version = "v0.1.1",
-    [string]$InstallDir = "C:\Tools\antigravity-mcp"
+    [string]$InstallDir = ""
 )
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
@@ -21,6 +23,8 @@ $python = (py -0p) | ForEach-Object {
 } | Sort-Object Minor -Descending | Select-Object -First 1 -ExpandProperty Path
 if (-not $python) { throw "Python 3.11+ not found (py -0p). Install it from python.org." }
 Write-Host "agy $(agy --version), python $python"
+if (-not $InstallDir) { $InstallDir = Split-Path (& $python (Join-Path (Split-Path $here) "scripts\broker.py") server) }
+$InstallDir = [IO.Path]::GetFullPath($InstallDir)
 
 Write-Step "antigravity-mcp $Version in $InstallDir"
 if (Test-Path "$InstallDir\server.py") {
@@ -31,8 +35,9 @@ if (Test-Path "$InstallDir\server.py") {
 }
 
 Write-Step "agy permission rules (all commands allowed, dangerous ones hard-denied)"
+# agy on Windows writes the home folder as /Users/<name> in its path rules.
 $homeRule = "/Users/$env:USERNAME"
-& $python "$here\merge.py" agy "$env:USERPROFILE\.gemini\antigravity-cli\settings.json" "$here\agy-permissions.json" $homeRule
+& $python "$here\merge.py" agy (Join-Path $HOME ".gemini\antigravity-cli\settings.json") "$here\agy-permissions.json" $homeRule
 
 Write-Step "Server config (approval_relay) with owner-only permissions"
 $cfgDir = "$env:APPDATA\AntigravityMCP"
@@ -60,6 +65,6 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 Write-Step "Claude Code allow rule"
-& $python "$here\merge.py" allow "$env:USERPROFILE\.claude\settings.json" "mcp__antigravity"
+& $python "$here\merge.py" allow (Join-Path $HOME ".claude\settings.json") "mcp__antigravity"
 
 Write-Host "`nDone. Open a new Claude Code session to load the antigravity tools." -ForegroundColor Green

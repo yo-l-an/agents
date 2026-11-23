@@ -1,6 +1,7 @@
 """Live, read-only view of every Gemini worker, for the human. The lead never calls it.
 
-    double-click viewer.cmd, or: py -3 viewer.py [--port 7380] [--no-browser] [--db <state.sqlite3>]
+    double-click viewer.cmd (Windows) or viewer.command (macOS),
+    or: python viewer.py [--port 7380] [--no-browser] [--db <state.sqlite3>]
     It opens http://localhost:7380 and runs until its console window is closed.
 
 Reads the antigravity broker's SQLite store in read-only mode, so it cannot change,
@@ -22,7 +23,8 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from prune import find_db, load_pins, save_pins
+from broker import find_db
+from prune import load_pins, save_pins
 
 DB = find_db()
 USAGE = {"groups": None, "error": None, "at": None}

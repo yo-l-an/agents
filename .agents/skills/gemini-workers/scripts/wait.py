@@ -1,6 +1,6 @@
 """Block until Gemini workers need the lead, polling the antigravity broker locally. Gates routine prompts on the way.
 
-    py -3 wait.py TASK_ID [TASK_ID ...] [--any] [--shared] [--allow-path DIR ...] [--no-gate] [--log FILE]
+    python wait.py TASK_ID [TASK_ID ...] [--any] [--shared] [--allow-path DIR ...] [--no-gate] [--log FILE]
                   [--interval 20] [--timeout 14400]
 
 The gate answers a worker's shell-command prompt with a one-time `allow` when the command is routine: it matches no
@@ -24,7 +24,8 @@ import sys
 import time
 from pathlib import Path
 
-SERVER = r"C:\Tools\antigravity-mcp\server.py"
+from broker import WINDOWS, server_path
+
 RULES_FILE = Path(__file__).resolve().parent.parent / "setup" / "agy-permissions.json"
 BRAIN = str(Path.home() / ".gemini" / "antigravity-cli" / "brain")
 DONE = {"completed", "failed", "interrupted", "truncated", "cancelled", "error"}
@@ -53,10 +54,13 @@ URL = re.compile(r"(?i)https?://([^/\s\"':]+)")
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "[::1]"}
 # Stops at spaces and shell separators, not at `'` (a Windows user folder may hold one); trailing quotes are stripped.
 ABS_PATH = re.compile(r"(?<![\w/])([A-Za-z]:[\\/][^\s\";|&<>]*)")
+# macOS and Linux: /absolute/paths. Not on Windows, where `cmd /c` and other /flags look the same.
+POSIX_PATH = re.compile(r"(?<![\w.:/~-])(/[^\s\";|&<>]+)")
+SYSTEM_PATHS = ("/dev/null", "/tmp/", "/private/tmp/", "/usr/bin/env")
 
 
 def call(tool, args):
-    out = subprocess.run([sys.executable, SERVER, "call", tool, "--args", json.dumps(args)],
+    out = subprocess.run([sys.executable, str(server_path()), "call", tool, "--args", json.dumps(args)],
                          capture_output=True, text=True, encoding="utf-8", timeout=120)
     data = json.loads(out.stdout or "{}")
     if not data.get("ok"):
@@ -94,7 +98,10 @@ def risk(command, workdir, allowed_paths, rules, shared=False):
         if re.search(pattern, command):
             return f"shared checkout rule: {pattern}"
     roots = [norm(p) for p in [workdir, BRAIN, *allowed_paths] if p]
-    for path in ABS_PATH.findall(command):
+    found = ABS_PATH.findall(command)
+    if not WINDOWS:
+        found += [p for p in POSIX_PATH.findall(command) if not p.startswith(SYSTEM_PATHS)]
+    for path in found:
         path = path.rstrip("')")
         p = norm(path)
         if not any(p == r or p.startswith(r + os.sep) for r in roots):

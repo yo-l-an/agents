@@ -2,13 +2,12 @@
 active, not pinned in the viewer, and whose last message is older than --days (default 7).
 wait.py starts it on each run.
 
-    py -3 prune.py [--days 7] [--dry-run]
+    python prune.py [--days 7] [--dry-run]       (py -3 on Windows, python3 on macOS and Linux)
 
 Deletion goes through the broker (`agy_close` with `action: "forget"`). Antigravity keeps
 its own copy of each conversation in ~/.gemini/antigravity-cli.
 """
 import argparse
-import glob
 import json
 import os
 import sqlite3
@@ -18,7 +17,8 @@ import time
 import uuid
 from pathlib import Path
 
-SERVER = r"C:\Tools\antigravity-mcp\server.py"
+from broker import find_db, server_path
+
 ACTIVE = {"starting", "running", "waiting", "interrupting"}
 # Pinned workers are never deleted. The file sits in the home folder, outside AppData, so the
 # viewer (started from Explorer) and this script (started inside the Claude app) share it.
@@ -37,20 +37,6 @@ def save_pins(pins):
     tmp = PINS.with_suffix(".tmp")
     tmp.write_text(json.dumps(sorted(pins)), encoding="utf-8")
     os.replace(tmp, PINS)
-
-
-def find_db():
-    """The broker's store. A broker started by a packaged (MSIX) app, such as the Claude desktop
-    app, writes into that app's LocalCache, which only the app's own processes see at the plain
-    path. Take the most recently written of the plain path and every package copy."""
-    local = os.environ.get("LOCALAPPDATA", "")
-    found = [os.path.join(local, "AntigravityMCP", "state.sqlite3")]
-    found += glob.glob(os.path.join(local, "Packages", "*", "LocalCache", "Local", "AntigravityMCP", "state.sqlite3"))
-
-    def written(p):
-        return max((os.path.getmtime(f) for f in (p, p + "-wal") if os.path.exists(f)), default=-1)
-
-    return max(found, key=written)
 
 
 def stale(db, days):
@@ -74,7 +60,7 @@ def stale(db, days):
 
 
 def forget(task_id):
-    out = subprocess.run([sys.executable, SERVER, "call", "agy_close", "--args",
+    out = subprocess.run([sys.executable, str(server_path()), "call", "agy_close", "--args",
                           json.dumps({"task_id": task_id, "request_id": str(uuid.uuid4()), "action": "forget"})],
                          capture_output=True, text=True, encoding="utf-8", timeout=120)
     data = json.loads(out.stdout or "{}")

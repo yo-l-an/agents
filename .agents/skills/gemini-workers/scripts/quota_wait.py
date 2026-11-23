@@ -1,7 +1,7 @@
 """Block until the Gemini models' quota is usable again. The lead runs it in the background when a
 worker stops on `quota_exhausted` or `rate_limited`, then resumes the workers.
 
-    py -3 quota_wait.py [--min-wait 0] [--interval 900] [--timeout 0]
+    python quota_wait.py [--min-wait 0] [--interval 900] [--timeout 0]
 
 Reads the quota with `agy -p /usage`, a slash command that spends no quota and saves no conversation.
 While a Gemini bucket (5-hour or weekly) is used up, it sleeps until that bucket's reset time, re-checking

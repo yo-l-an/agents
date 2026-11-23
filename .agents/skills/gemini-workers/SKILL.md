@@ -9,7 +9,7 @@ You are the **lead**: you brief each **worker**, leave it alone while it works, 
 
 Work is **hands-off**: agy hard-denies the dangerous commands (push, history rewrites, recursive deletes, web requests, system changes, secrets) by its own rules, and the waiter's **gate** answers every routine prompt agy still raises. Some sessions prompt for every shell command; the gate absorbs that. You are the **gatekeeper** only for what the gate hands you.
 
-The tools are `mcp__antigravity__agy_*`. If they are deferred, load them all with one ToolSearch call: `"+antigravity agy"`, max_results 30. The scripts are in `scripts/` beside this file; call them with `py -3 "$(cygpath -w "$HOME/.claude/skills/gemini-workers/scripts/<script>")"`.
+The tools are `mcp__antigravity__agy_*`. If they are deferred, load them all with one ToolSearch call: `"+antigravity agy"`, max_results 30. The scripts are in `scripts/` beside this file. In the commands below, `<skill>` is this file's folder and `<python>` is Python 3.11+: `py -3` on Windows, `python3` on macOS and Linux. From Git Bash on Windows, pass the script path through `cygpath -w`. The tools missing altogether means the server is not installed: see [SETUP.md](SETUP.md).
 
 ## Defaults
 
@@ -49,7 +49,7 @@ Record the base commit with `git -C <repo> rev-parse HEAD`, then call `agy_start
 Start one background waiter for all your workers. Use the Bash tool with `run_in_background: true`:
 
 ```bash
-py -3 "$(cygpath -w "$HOME/.claude/skills/gemini-workers/scripts/wait.py")" <task_id> [<task_id> ...] \
+<python> <skill>/scripts/wait.py <task_id> [<task_id> ...] \
     [--any] [--shared] [--allow-path "<main checkout>"] --log "<scratchpad>/allowed.log"
 ```
 
@@ -71,7 +71,7 @@ The Gemini quota (5-hour and weekly) is shared by every worker. When the waiter 
 2. Start the quota waiter in the background, and stay idle until it exits. It sleeps until the reset, reads the quota locally, and costs nothing while it waits:
 
    ```bash
-   py -3 "$(cygpath -w "$HOME/.claude/skills/gemini-workers/scripts/quota_wait.py")" [--min-wait 120]
+   <python> <skill>/scripts/quota_wait.py [--min-wait 120]
    ```
 
    Pass `--min-wait 120` after `rate_limited`, which the quota does not show.

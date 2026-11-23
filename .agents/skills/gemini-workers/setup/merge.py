@@ -1,6 +1,6 @@
-"""Idempotent JSON merges for setup.ps1. Each run backs up the target first.
+"""Idempotent JSON merges for setup.ps1 and setup.sh. Each run backs up the target first.
 
-    merge.py agy    <agy settings.json> <agy-permissions.json> <home as /Users/name>   (sets allow/deny exactly)
+    merge.py agy    <agy settings.json> <agy-permissions.json> <home: /Users/name on Windows and macOS, $HOME on Linux>   (sets allow/deny exactly)
     merge.py allow  <claude settings.json> <rule>
 """
 import json

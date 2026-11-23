@@ -1,6 +1,6 @@
 # Gemini workers: troubleshooting
 
-Health check first: `py -3 C:\Tools\antigravity-mcp\server.py doctor`.
+Health check first: `<python> <install dir>/server.py doctor` (`py -3` on Windows, `python3` elsewhere; `<python> <skill>/scripts/broker.py server` prints the `server.py` in use). No `mcp__antigravity__*` tools at all: the server is not installed or not registered, see SETUP.md "Install".
 
 ## Failed calls
 

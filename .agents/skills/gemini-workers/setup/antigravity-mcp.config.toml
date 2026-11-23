@@ -1,4 +1,4 @@
-# antigravity-mcp settings. After a change: py -3 C:\Tools\antigravity-mcp\server.py stop
+# antigravity-mcp settings. After a change, stop the broker: <python> <install dir>/server.py stop
 # Claude may approve one-time permission prompts. Dangerous commands are hard-denied
 # by agy itself (deny rules in ~/.gemini/antigravity-cli/settings.json), which wins over any approval.
 approval_relay = true
