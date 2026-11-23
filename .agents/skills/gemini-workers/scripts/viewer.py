@@ -164,18 +164,30 @@ PAGE = r"""<!doctype html>
 :root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1b;--dim:#76766f;--line:#e4e4df;--accent:#2f6fde;--ok:#1f8a4c;--warn:#b7791f;--bad:#c53030;--code:#f1f1ee}
 @media (prefers-color-scheme:dark){:root{--bg:#141413;--panel:#1c1c1a;--ink:#ecece8;--dim:#93938b;--line:#2c2c29;--accent:#6ea0ff;--ok:#4cc27e;--warn:#e0a84a;--bad:#f07070;--code:#24241f}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;height:100vh;display:flex}
-#pick{display:flex;align-items:center;gap:6px;font:inherit;font-weight:600;font-size:15px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;max-width:min(60vw,420px)}
-#pick:hover{background:var(--bg)}#pick .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#pick .caret{color:var(--dim);font-size:11px}
+#pick{display:flex;align-items:center;gap:6px;font:inherit;font-weight:600;font-size:15px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;max-width:100%;text-align:left}
+@media (hover:hover){#pick:hover{background:var(--bg)}}#pick .name{overflow-wrap:anywhere}#pick .caret{color:var(--dim);font-size:11px}
 #menu{position:fixed;inset:auto;top:52px;left:12px;margin:0;padding:6px;width:min(380px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgb(0 0 0/.18)}
 .task{padding:7px 10px;border-radius:7px;cursor:pointer}.task:hover{background:var(--bg)}
 .fin{margin-top:4px;border-top:1px solid var(--line);padding-top:4px}.fin>summary{cursor:pointer;padding:6px 10px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
 .none{padding:6px 10px}.pin{font-size:11px;margin-right:4px}
-.task.sel{background:color-mix(in srgb,var(--accent) 12%,transparent)}.task b{display:block;font-weight:600;word-break:break-all}
+.task.sel{background:color-mix(in srgb,var(--accent) 12%,transparent)}.task>b{display:block;font-weight:600;overflow-wrap:anywhere}
 .meta{color:var(--dim);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--dim)}
 .dot.live{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}.dot.wait{background:var(--warn)}.dot.fail{background:var(--bad)}
 main{flex:1;display:flex;flex-direction:column;min-width:0}
-header{padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-header .meta{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* A worker reads the same in the header and in the switcher, by rank: its name; then its model and
+   status (.facts); then where it runs and what it has spent (.details). Everything wraps, nothing is truncated. */
+.facts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
+.model{font:12px/1.4 ui-monospace,Consolas,monospace;color:var(--ink);background:var(--code);border:1px solid var(--line);border-radius:6px;padding:2px 7px;overflow-wrap:anywhere}
+.state{font-size:12px;color:var(--dim)}
+.details{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:12px;color:var(--dim)}.details:empty{display:none}
+.details .path{font-family:ui-monospace,Consolas,monospace;overflow-wrap:anywhere;min-width:0}
+.task .facts{margin:4px 0 3px 14px}.task .details{padding-left:14px}
+header{padding:8px 12px 7px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:5px}
+header .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+header .controls{margin-left:auto;display:flex;flex-wrap:wrap;gap:2px 14px}
+#sub{padding-left:11px}
+@media (max-width:600px){header{align-items:flex-start}header .top{display:contents}#facts{padding-left:11px}
+ header .controls{order:1;margin-left:0;padding-left:11px}}
 label{color:var(--dim);font-size:12px;user-select:none}
 #feed{flex:1;overflow:auto;padding:12px 20px 100px}
 #chin{flex:none;display:flex;align-items:center;padding:6px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--dim)}
@@ -198,13 +210,14 @@ label{color:var(--dim);font-size:12px;user-select:none}
 .ev.file{padding:4px 12px;font-size:12.5px}.ev.req{font-size:12.5px}.ev.sys{font-size:12px;color:var(--dim);background:transparent;border:none;padding:2px 12px}
 .time{float:right;color:var(--dim);font-size:11px;margin-left:8px}
 .empty{color:var(--dim);padding:40px;text-align:center}
-@media (max-width:720px){header .meta{flex-basis:100%;order:3}}
 </style></head><body>
 <div id="menu" popover><div id="tasks"></div></div>
-<main><header><button id="pick" popovertarget="menu" title="Switch worker"><span id="pdot" class="dot"></span><span class="name" id="title">Gemini workers</span><span class="caret">▾</span></button><span class="meta" id="sub"></span>
-<label title="Show the worker's thinking. Untick to see only its messages and actions."><input type="checkbox" id="thoughts" checked> thoughts</label>
+<main><header><div class="top"><button id="pick" popovertarget="menu" title="Switch worker"><span id="pdot" class="dot"></span><span class="name" id="title">Gemini workers</span><span class="caret">▾</span></button>
+<span id="facts" class="facts"></span>
+<span class="controls"><label title="Show the worker's thinking. Untick to see only its messages and actions."><input type="checkbox" id="thoughts" checked> thoughts</label>
 <label title="Scroll to new activity as it arrives. Scrolling up pauses it until you are back at the bottom."><input type="checkbox" id="follow" checked> follow</label>
-<label title="Keep this worker and its transcript. Unpinned workers are deleted 7 days after their last message."><input type="checkbox" id="keep"> do not delete after 7 days</label></header>
+<label title="Keep this worker and its transcript. Unpinned workers are deleted 7 days after their last message."><input type="checkbox" id="keep"> do not delete after 7 days</label></span></div>
+<div id="sub" class="details"></div></header>
 <div id="feed"><div class="empty">Live view of the antigravity broker. Read-only.</div></div>
 <footer id="chin"><span>Reading quota…</span></footer></main>
 <script>
@@ -223,12 +236,19 @@ async function loadTasks(){let got;try{got=await (await fetch('/api/tasks')).jso
  const done=list.filter(finished);let fin=null;
  if(done.length){fin=el('details','fin');fin.open=finOpen;fin.ontoggle=()=>{finOpen=fin.open};fin.append(el('summary',null,`Finished (${done.length})`))}
  for(const t of list){const d=el('div','task'+(t.id===sel?' sel':''));d.onclick=()=>{$('#menu').hidePopover();if(t.id!==sel)pick(t.id)};const b=el('b');b.append(dot(t));if(t.pinned)b.append(el('span','pin','📌'));b.append(t.name);d.append(b);
-  const where=(t.workdir||'').split(/[\\/]/).filter(Boolean).pop()||'';
-  d.append(el('div','meta',`${t.status}${t.activity==='background'?' · background':''} · ${t.turn||''} ${t.turn_status||''} · ${ago(t.last_ts)}`));
-  d.append(el('div','meta',[where,t.model,t.context?Math.round(100*t.context.used/t.context.size)+'% context':''].filter(Boolean).join(' · ')));(finished(t)?fin:box).append(d)}
+  const facts=el('div','facts');facts.append(...workerFacts(t,[t.turn&&`${t.turn} ${t.turn_status||''}`.trim(),ago(t.last_ts)]));
+  const details=el('div','details');details.append(...workerDetails(t,true));d.append(facts,details);(finished(t)?fin:box).append(d)}
  if(fin){if(done.length===list.length)box.append(el('div','meta none','No active workers'));box.append(fin)}
- const t=list.find(x=>x.id===sel);if(t){$('#title').textContent=t.name;if(!keepBusy)$('#keep').checked=!!t.pinned;$('#pdot').replaceWith(Object.assign(dot(t),{id:'pdot'}));const c=t.context?` · context ${Math.round(100*t.context.used/t.context.size)}%`:'';
-  $('#sub').textContent=`${t.status}${t.activity==='background'?' (background)':''} · ${t.workdir||''}${t.tokens?' · '+(t.tokens/1e6).toFixed(1)+'M tokens':''}${c}`}}
+ const t=list.find(x=>x.id===sel);if(t){$('#title').textContent=t.name;if(!keepBusy)$('#keep').checked=!!t.pinned;$('#pdot').replaceWith(Object.assign(dot(t),{id:'pdot'}));
+  $('#facts').replaceChildren(...workerFacts(t));$('#sub').replaceChildren(...workerDetails(t))}}
+// The pieces a worker shows in the header and in the switcher. The switcher adds the turn and the
+// time since the last event to the status, and names the folder (its full path in the tooltip).
+function workerFacts(t,more=[]){const out=[];if(t.model)out.push(el('span','model',t.model));
+ out.push(el('span','state',[t.status,t.activity==='background'&&'background',...more].filter(Boolean).join(' · ')));return out}
+function workerDetails(t,short){const out=[],figure=(value,unit)=>el('span',null,value+' '+unit);
+ if(t.workdir){const p=el('span','path',short?t.workdir.split(/[\\/]/).filter(Boolean).pop():t.workdir);if(short)p.title=t.workdir;out.push(p)}
+ if(t.tokens)out.push(figure((t.tokens/1e6).toFixed(1)+'M','tokens'));
+ if(t.context)out.push(figure(Math.round(100*t.context.used/t.context.size)+'%','context'));return out}
 function pick(id){sel=id;after=0;tools={};lastMsg=lastThought=group=null;$('#feed').textContent='';loadTasks();poll()}
 function card(cls,kind,text,ts){const e=el('div','ev '+cls);if(ts)e.append(el('span','time',hhmm(ts)));e.append(el('span','k',kind));if(text!=null)e.append(document.createTextNode(text));return e}
 function add(e){$('#feed').append(e)}
@@ -270,6 +290,9 @@ function render(ev){const d=ev.data,k=ev.kind;
 async function poll(){if(!sel)return;const id=sel;try{const evs=await (await fetch(`/api/events?task=${id}&after=${after}`)).json();
  if(id!==sel)return;const first=after===0;for(const ev of evs){render(ev);after=ev.seq}
  if(evs.length)follow(first)}catch(e){}}
+// The header's height varies with wrapping, so the switcher opens just below wherever it ends.
+$('#menu').addEventListener('beforetoggle',e=>{if(e.newState!=='open')return;const top=Math.round($('header').getBoundingClientRect().bottom+6);
+ Object.assign(e.target.style,{top:top+'px',maxHeight:Math.max(200,innerHeight-top-12)+'px'})});
 $('#follow').addEventListener('change',e=>{if(e.target.checked)follow(true)});
 $('#thoughts').onchange=e=>document.querySelectorAll('.ev.thought').forEach(t=>t.hidden=!e.target.checked);
 $('#keep').onchange=async e=>{if(!sel)return;keepBusy=true;const want=e.target.checked;
