@@ -23,10 +23,15 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from broker import find_db
+from broker import find_db, server_path
 from prune import load_pins, save_pins
 
 DB = find_db()
+# The broker's events keep only the first 500 bytes of each prompt (antigravity-mcp v0.1.1, `preview`).
+# The worker receives all of it, and agy records all of it in its own conversation database.
+PREVIEW_BYTES = 500
+CONVERSATIONS = Path.home() / ".gemini" / "antigravity-cli" / "conversations"
+USER_INPUT_STEP = 14  # agy's step_type for a message sent to the worker
 USAGE = {"groups": None, "error": None, "at": None}
 
 
@@ -91,14 +96,106 @@ def tasks():
         return out
 
 
+def load_redact():
+    """The broker's own secret redaction, so a full prompt hides what its preview hides. None when the
+    server cannot be imported: full prompts are then not shown at all."""
+    try:
+        sys.path.insert(0, str(server_path().parent))
+        from antigravity_local_mcp.security import redact
+        return redact
+    except Exception:
+        return None
+
+
+REDACT = load_redact()
+_SENT = {}  # session id -> (database mtime, texts of the messages sent to the worker)
+
+
+def varint(buf, i):
+    value = shift = 0
+    while True:
+        b = buf[i]
+        i += 1
+        value |= (b & 0x7F) << shift
+        if b < 0x80:
+            return value, i
+        shift += 7
+
+
+def proto_strings(buf, depth=0):
+    """Every UTF-8 string in a protobuf message, found without its schema. None when buf is not one."""
+    out, i = [], 0
+    try:
+        while i < len(buf):
+            key, i = varint(buf, i)
+            kind = key & 7
+            if kind == 0:
+                _, i = varint(buf, i)
+            elif kind in (1, 5):
+                i += 8 if kind == 1 else 4
+            elif kind == 2:
+                size, i = varint(buf, i)
+                chunk, i = buf[i:i + size], i + size
+                if i > len(buf):
+                    return None
+                try:
+                    out.append(chunk.decode("utf-8"))
+                except UnicodeDecodeError:
+                    pass
+                if depth < 8:
+                    out += proto_strings(chunk, depth + 1) or []
+            else:
+                return None
+        return out
+    except IndexError:
+        return None
+
+
+def sent_texts(session):
+    """The strings inside each message sent to the worker, read from agy's conversation database."""
+    path = CONVERSATIONS / f"{session}.db"
+    stamp = max((os.path.getmtime(f) for f in (path, Path(f"{path}-wal")) if f.exists()), default=None)
+    if stamp is None:
+        return []
+    if _SENT.get(session, (None,))[0] != stamp:
+        c = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=5)
+        try:
+            rows = c.execute("select step_payload from steps where step_type=? order by idx", (USER_INPUT_STEP,))
+            texts = [s for (payload,) in rows if payload for s in proto_strings(bytes(payload)) or []]
+        finally:
+            c.close()
+        _SENT[session] = (stamp, texts)
+    return _SENT[session][1]
+
+
+def full_prompt(session, shown):
+    """The whole prompt whose preview is `shown`, redacted like the preview. None when it is not cut,
+    or when it cannot be found."""
+    if len(shown.encode("utf-8")) < PREVIEW_BYTES - 3 or not session or not REDACT:
+        return None
+    try:
+        found = [str(REDACT(s)) for s in sent_texts(session) if len(s.encode("utf-8")) > len(shown.encode("utf-8"))]
+    except (OSError, sqlite3.Error):
+        return None
+    return max((s for s in found if s.startswith(shown)), key=len, default=None)
+
+
 def events(task, after):
     marks = ",".join("?" * len(SHOWN))
     with connect() as c:
         rows = c.execute(f"select seq, turn, ts, kind, origin, data from events where task=? and seq>? "
                          f"and kind in ({marks}) order by seq limit 2000", (task, after, *SHOWN)).fetchall()
+        owner = c.execute("select data from tasks where id=?", (task,)).fetchone()
+        session = json.loads(owner[0]).get("session_id") if owner else None
         out = []
         for s, t, ts, k, o, d in rows:
             data = json.loads(d)
+            if k in ("turn_started", "steer") and data.get("prompt_preview"):
+                whole = full_prompt(session, data["prompt_preview"])
+                if whole:
+                    data["prompt"] = whole
+                elif len(data["prompt_preview"].encode("utf-8")) >= PREVIEW_BYTES - 3:
+                    data["prompt_cut"] = True
             if k == "request_opened":  # say what is being asked, from the request record
                 req = c.execute("select data from requests where id=?", (data.get("request_id"),)).fetchone()
                 if req:
@@ -283,7 +380,9 @@ function inGroup(e,label,cls){if(!group){group=el('details','acts');group.open=t
 function grow(c,text){c._raw=(c._raw||'')+(text||'');c.lastChild.textContent=c._raw.trim()}
 function render(ev){const d=ev.data,k=ev.kind;
  if(k!=='message')lastMsg=null;if(k!=='thought')lastThought=null;
- if(k==='turn_started'||k==='steer'){closeGroup();add(card('prompt',k==='steer'?'lead steers':'lead · '+ev.turn,d.prompt_preview||'',ev.ts));return}
+ if(k==='turn_started'||k==='steer'){closeGroup();// The full prompt when the viewer found it in agy's record, else the broker's 500-byte preview, marked when cut.
+  const c=card('prompt',k==='steer'?'lead steers':'lead · '+ev.turn,d.prompt||d.prompt_preview||'',ev.ts);
+  if(d.prompt_cut)c.append(el('span','meta','… (cut: the broker keeps the first 500 bytes; the worker got the whole prompt)'));add(c);return}
  if(k==='thought'){closeGroup();if(lastThought){grow(lastThought,d.text);return}const c=card('thought','thinking','',ev.ts);grow(c,d.text);c.hidden=!$('#thoughts').checked;lastThought=c;add(c);return}
  if(k==='message'){closeGroup();if(lastMsg){grow(lastMsg,d.text);return}lastMsg=card('message','worker','',ev.ts);grow(lastMsg,d.text);add(lastMsg);return}
  if(k==='tool_call'||k==='tool_update'){let t=tools[d.tool_call_id];
