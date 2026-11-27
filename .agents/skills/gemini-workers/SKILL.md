@@ -13,7 +13,9 @@ The tools are `mcp__antigravity__agy_*`. If they are deferred, load them all wit
 
 ## Defaults
 
-- Model: `gemini-4-neon-medium`, for every worker. Go down to `gemini-3.8-flash-low` only for mechanical work.
+- Model, one of two, never another:
+  - `gemini-4-neon-medium`: most work, anything that needs thinking (design, debugging, features, refactors).
+  - `gemini-4-hydrogen-medium`: work that needs less thinking: mechanical edits, renames, docs, formatting.
 - Mode: `accept-edits` for work that changes files, `plan` for pure research.
 - At most 4 live workers, the server's cap.
 - Pick a **layout** per run, and name it in every brief:
